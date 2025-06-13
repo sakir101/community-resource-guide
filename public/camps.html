@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camps - Resource Guide</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 2rem 0; background-color: #f8f9fa; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .search-bar { margin-bottom: 2rem; }
+        .resource-table th { background-color: #007bff; color: white; }
+        .resource-table td { vertical-align: top; padding: 0.75rem; }
+        .category-card { margin-bottom: 1rem; }
+        .category-card:hover { transform: translateY(-2px); transition: all 0.3s; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mb-4 text-center text-primary">Camps - Resource Guide</h1>
+    <input type="text" id="searchInput" class="form-control search-bar" onkeyup="searchTable('searchInput', 'resourceTable')" placeholder="Search Camps..."><div class="table-responsive"><table class="dataframe table table-striped resource-table" id="resourceTable">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Contact Person</th>
+      <th>Phone</th>
+      <th>Camp Name</th>
+      <th>Under Auspices of</th>
+      <th>Boys, Girls, Mixed</th>
+      <th>Ages Servicing</th>
+      <th>Describe the Kids you're Servicing</th>
+      <th>Yiddish/English Speaking</th>
+      <th>Accommodate Medical Needs?</th>
+      <th>Location</th>
+      <th>Integrated or Self Contained</th>
+      <th>Applications Open When?</th>
+      <th>Email</th>
+      <th>Comments</th>
+      <th>Tuition</th>
+      <th>Funding Sources</th>
+      <th>Scholarships Available?</th>
+      <th>@dropdown</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Chaim Lowy</td>
+      <td>718-387-8400 ext 5289</td>
+      <td>Kinderlich</td>
+      <td>Hamaspik Kings</td>
+      <td>boys</td>
+      <td>9+</td>
+      <td>Medium to high functioning.</td>
+      <td>Yiddish and English</td>
+      <td>NaN</td>
+      <td>South Fallsburg</td>
+      <td>self contained</td>
+      <td>NaN</td>
+      <td>chaimlowy@hamaspikkings.org</td>
+      <td>Camp Kinderlich offers a tailored 7.5-week summer experience, Located in South Fallsburg.\nOur program provides a thoughtfully structured day that balances academic enrichment with\nengaging activities. \nEach camper is paired with an experienced, responsible, and dedicated counselor who provides\npersonalized support and care. with a focus on enhancing the camper's ADL skills. \nThe program is directed by our dynamic program leader, who also heads our renowned “Buneinu”\nASR program throughout the year.\nThe morning & afternoon curriculum is meticulously crafted and directed by our professional\ncurriculum director, emphasizing a rich, hands-on approach to learning.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>R ZImmerman</td>
+      <td>718-302-5222 ext 104</td>
+      <td>Binyan Olem</td>
+      <td>Binyan Olem</td>
+      <td>Boys</td>
+      <td>ages 11-17</td>
+      <td>boys with high to moderate functioning autism & other learning disabilities</td>
+      <td>Yiddish</td>
+      <td>NaN</td>
+      <td>upstate</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rabbi Wadler</td>
+      <td>646-339-9041</td>
+      <td>Chaverim</td>
+      <td>JUF/ Yachad</td>
+      <td>Boys</td>
+      <td>8-25</td>
+      <td>Different bunks with differing needs from mid functioning to extremely high functioning. Has a job training bunk and a CIT bunk as well.</td>
+      <td>NaN</td>
+      <td>some medical needs.</td>
+      <td>Camp Mogen Av / Heller</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>yachadsummer@ou.org</td>
+      <td>NaN</td>
+      <td>$10,000 for 6 weeks. Can use OPWDD respite to pay for camp</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Tali Abramzon</td>
+      <td>718-693-9032</td>
+      <td>Chavivim</td>
+      <td>Yeshiva Bonim Lamokom</td>
+      <td>Boys</td>
+      <td>ages 7 and up</td>
+      <td>High functioning Boys with Down Syndrome</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Camp Tashbar- Liberty</td>
+      <td>Integrated for parts of the day</td>
+      <td>NaN</td>
+      <td>bonimta@gmail.com</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Mrs. Kaufman</td>
+      <td>NaN</td>
+      <td>Chemda</td>
+      <td>Naaleh (Bobov 45)</td>
+      <td>Girls</td>
+      <td>7-16</td>
+      <td>Downs Syndrome</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Camp Naaleh - Upstate</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Chaya Miller</td>
+      <td>718-686-2607</td>
+      <td>HASC</td>
+      <td>HASC</td>
+      <td>both</td>
+      <td>from 4 years old</td>
+      <td>one on one supervision</td>
+      <td>NaN</td>
+      <td>accommodates most medical needs and non ambulatory</td>
+      <td>Parksville, NY</td>
+      <td>self contained</td>
+      <td>NaN</td>
+      <td>cmiller@camphasc.org</td>
+      <td>Love and happiness for special needs. Very good therapists children make great progress while in camp.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>David Sharvit</td>
+      <td>718-686 3261</td>
+      <td>Kaylie</td>
+      <td>Ohel</td>
+      <td>Boys/ girls separate sessions</td>
+      <td>NaN</td>
+      <td>Very mainstream camp able to be in regular bunks.</td>
+      <td>English</td>
+      <td>Nurse on site</td>
+      <td>Wurtsboro NY</td>
+      <td>Totally integrated</td>
+      <td>Sept / Oct for following summer. Usually full before Dec</td>
+      <td>David_sharvit@ohelfamily.org</td>
+      <td>Mainstream and integrated.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Chashie Krupka</td>
+      <td>973-650-9751</td>
+      <td>Kesher</td>
+      <td>JUF/ Yachad</td>
+      <td>Girls</td>
+      <td>6-25</td>
+      <td>Many girls with Downs Syndrome but also separate bunk for girls with autism. Also have a voc program for high functioning teens</td>
+      <td>NaN</td>
+      <td>Nurse on site</td>
+      <td>Camp Sternberg</td>
+      <td>Integrated for parts of the day</td>
+      <td>NaN</td>
+      <td>krupkac@ou.org</td>
+      <td>Full summer program</td>
+      <td>Can use OPWDD</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Tilly Gordon</td>
+      <td>718-408-5408</td>
+      <td>Kinderville</td>
+      <td>Hamaspik</td>
+      <td>both</td>
+      <td>Boys ages 5-9, Girls 5-12</td>
+      <td>Various functioning levels, 1-1 supervision. Older girls 9-12 are very high functioning</td>
+      <td>NaN</td>
+      <td>accomodates some medical needs with RN on site</td>
+      <td>South Fallsburg</td>
+      <td>Self contained</td>
+      <td>NaN</td>
+      <td>tgordon@hamaspikkv.org</td>
+      <td>Full summer program</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Chashi Savitsky</td>
+      <td>323-241-2919</td>
+      <td>Leebeinu</td>
+      <td>Private</td>
+      <td>Boys</td>
+      <td>5-14</td>
+      <td>Various functioning levels, 1-1 staff ratio. Older boys 9-14 are higher functioning with full day rebbi program (with female staff in the evening and nights)</td>
+      <td>NaN</td>
+      <td>some medical needs</td>
+      <td>New york</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>info@leebeinu.org</td>
+      <td>8 weeks summer program! first half July 7- Aug 31 (option of second half only) - floortime / language based theraputic sleepaway camp</td>
+      <td>NaN</td>
+      <td>Can use OPWDD and ABA</td>
+      <td>Yes</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Mrs. Roth</td>
+      <td>1845-641-1884</td>
+      <td>Leebi</td>
+      <td>Belz</td>
+      <td>Girls</td>
+      <td>7-23</td>
+      <td>high functioning</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Camp Bnos Belz, Ellenville</td>
+      <td>Integrate for parts of the day</td>
+      <td>NaN</td>
+      <td>leebi@campbnosbelz.org</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rabbi Klein</td>
+      <td>718-486-6561</td>
+      <td>Lev Echod</td>
+      <td>Yeshiva Lev Uvois</td>
+      <td>Boys</td>
+      <td>Ages 9-14</td>
+      <td>Learning Disabilities, Physical and behavioral issues</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Camp Pupa - Swan Lake</td>
+      <td>Intergrated with the camp programs and activities, Self-contained classes</td>
+      <td>NaN</td>
+      <td>fspierer@levuvois.org</td>
+      <td>Self-contained classes</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Mr. Greenwald</td>
+      <td>718 303 9141 ext 2406</td>
+      <td>Levavi</td>
+      <td>HCS/ Human Care Services</td>
+      <td>both</td>
+      <td>Boys ages 3-9; Girls 4-25</td>
+      <td>various levels of functioning for developmentally delayed and medically fragile, different tracks for different levels</td>
+      <td>NaN</td>
+      <td>accomodate many medical needs; we have an RN</td>
+      <td>Chalet Hotel, Woodbourne</td>
+      <td>Self contained</td>
+      <td>NaN</td>
+      <td>aj.greenwald@camplevavi.org</td>
+      <td>Full summer program structured like a mainstream camp.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Mr. Greenwald</td>
+      <td>719 303 9141 ext 2406</td>
+      <td>Levavi TCs/ Machon Lev</td>
+      <td>HCS/ Human Care Services</td>
+      <td>girls</td>
+      <td>17 and up</td>
+      <td>dayhab - high functioning</td>
+      <td>NaN</td>
+      <td>accomodate many medical needs; we have an RN</td>
+      <td>Chalet Hotel, Woodbourne</td>
+      <td>Self contained</td>
+      <td>NaN</td>
+      <td>aj.greenwald@camplevavi.org</td>
+      <td>Full summer program structured like a mainstream camp.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Chumie Goldberg</td>
+      <td>718-732-0502</td>
+      <td>Migdal</td>
+      <td>Menucha Services</td>
+      <td>boys till age 9, girls</td>
+      <td>Girls 4-21 / boys ages 4-9</td>
+      <td>various levels of functioning for developmentally delayed and medically fragile</td>
+      <td>NaN</td>
+      <td>accomodate many medical needs; we have RNs</td>
+      <td>Upstate Ulster County</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>chumie@campm.org</td>
+      <td>Full summer program - We provide therapy and behavioral specialists</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Nesher</td>
+      <td>Yachad</td>
+      <td>both</td>
+      <td>8-14</td>
+      <td>1:2 staffing ratio. Separate bunk but mainstreamed with the neuro-typical peers during the day.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rabbi Scharf</td>
+      <td>917-754-0011</td>
+      <td>Ruach Hachaim</td>
+      <td>Private</td>
+      <td>Boys</td>
+      <td>8 - adulthood</td>
+      <td>all kinds of special needs - spectrum, autism, downs, ADHD, more higher functioning; 1:2 ratio</td>
+      <td>NaN</td>
+      <td>seizures</td>
+      <td>Camp Bonim</td>
+      <td>integrated with Camp Bonim</td>
+      <td>NaN</td>
+      <td>campruachhachaim@gmail.com</td>
+      <td>8 weeks</td>
+      <td>12500</td>
+      <td>respite funds</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rivky Weiss</td>
+      <td>929-276-9620</td>
+      <td>Simchas Hachaim - Adas</td>
+      <td>Simchas Hachaim - private</td>
+      <td>Girls</td>
+      <td>Grades 6 - 11</td>
+      <td>Mainstreamed girls with physical or medical challenges</td>
+      <td>NaN</td>
+      <td>physical disabilities</td>
+      <td>NaN</td>
+      <td>Fully Integrated - separate sleeping quarters</td>
+      <td>NaN</td>
+      <td>Simchashachaimprogram@gmail.com</td>
+      <td>Full summer program integrated in a chassidish camp</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rabbi Weiss</td>
+      <td>347-461-6912</td>
+      <td>Simchas Hachaim</td>
+      <td>Simchas Hachaim - private</td>
+      <td>Boys</td>
+      <td>Ages 8 - 13</td>
+      <td>high functioning boys</td>
+      <td>NaN</td>
+      <td>ASD</td>
+      <td>NaN</td>
+      <td>Integrated for part of the day</td>
+      <td>NaN</td>
+      <td>simchashachaimoffice@gmail.com</td>
+      <td>Full summer program - The program focuses on advancing a child's talent</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rivky Weiss</td>
+      <td>929-276-9621</td>
+      <td>Simchas Hachaim - juniors</td>
+      <td>Simchas Hachaim - private</td>
+      <td>Girls</td>
+      <td>Grades 2 - 7</td>
+      <td>high functioning girls with developmental disabilities</td>
+      <td>NaN</td>
+      <td>high functioning and developmental disabilities</td>
+      <td>NaN</td>
+      <td>Integrated for part of the day</td>
+      <td>NaN</td>
+      <td>Simchashachaimprogram@gmail.com</td>
+      <td>Full summer program - girls reside in private home, they are integrated in local mainstream daycamps and have self-contained post- daycamp activities and school prep</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rivky Weiss</td>
+      <td>929-276-9622</td>
+      <td>Simchas Hachaim - BRC</td>
+      <td>Simchas Hachaim - private</td>
+      <td>Girls</td>
+      <td>High School</td>
+      <td>High functioning girls who are capable of being mainstreamed with supervision</td>
+      <td>NaN</td>
+      <td>accommodates some medical needs</td>
+      <td>upstate</td>
+      <td>Self-contained</td>
+      <td>NaN</td>
+      <td>Simchashachaimprogram@gmail.com</td>
+      <td>Full summer program - optional full day or overnight program for toddlers</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rabbi Weiss</td>
+      <td>347-461-6912</td>
+      <td>Simchas Hachaim - Stolin</td>
+      <td>Simchas Hachaim - private</td>
+      <td>Girls</td>
+      <td>Ages 9-16</td>
+      <td>Mainstreamed boys with physical or medical challenges</td>
+      <td>NaN</td>
+      <td>accommodates some medical needs</td>
+      <td>Camp Stolin-Highfalls</td>
+      <td>Fully Integrated - separate sleeping quarters</td>
+      <td>NaN</td>
+      <td>simchashachaimoffice@gmail.com</td>
+      <td>Full summer program with a break for Camp Simcha Special Attendees</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Rabbi Tomlin</td>
+      <td>347-599-7796</td>
+      <td>Simchas Hachaim - Tiv Hachaim</td>
+      <td>Simchas Hachaim - private</td>
+      <td>Boys</td>
+      <td>Ages 13-18</td>
+      <td>High functioning boys</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Woodbourne</td>
+      <td>Self-contained</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Full summer program</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Mrs. C. Glick</td>
+      <td>347-401-2803</td>
+      <td>The YBE Experience</td>
+      <td>Yesodei Bina</td>
+      <td>Girls</td>
+      <td>10-16</td>
+      <td>Girls with academic and social challenges who can integrate in a mainstream camp</td>
+      <td>NaN</td>
+      <td>Minor medical needs</td>
+      <td>@Camp Chaya Sura</td>
+      <td>Mixed</td>
+      <td>NaN</td>
+      <td>docs@yesodeibina.org</td>
+      <td>Full Summer</td>
+      <td>NaN</td>
+      <td>DOE, Respite, etc.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yehuda Greenfield</td>
+      <td>212-613-8164</td>
+      <td>Yachad BaChutz</td>
+      <td>Yachad/JUF</td>
+      <td>boys</td>
+      <td>14-21 (high school)</td>
+      <td>High Functioning</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Upstate NY - Goldschein's Homestead</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>greenfieldy@ou.org</td>
+      <td>Summer on a animal farm!</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Yes</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yehuda Greenfield</td>
+      <td>212-613-8164</td>
+      <td>Yachad Birthright</td>
+      <td>Yachad/JUF</td>
+      <td>both</td>
+      <td>18-32</td>
+      <td>All types of developmental disabilities</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Israel Travel Program</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>greenfieldy@ou.org</td>
+      <td>Free Israel Travel Program - Ten days in June</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yehuda Greenfield</td>
+      <td>212-613-8164</td>
+      <td>Yachad Bunk Program</td>
+      <td>Yachad/JUF</td>
+      <td>both</td>
+      <td>8+</td>
+      <td>Mild to moderate developmental disabilities</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Camps Lavi, Nesher and Morasha</td>
+      <td>Self-Contained Bunks at Mainstream Camps</td>
+      <td>NaN</td>
+      <td>greenfieldy@ou.org</td>
+      <td>Full Summer or Half - Some integration with mainstream peers</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Yes</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yehuda Greenfield</td>
+      <td>212-613-8164</td>
+      <td>Yachad Getaway</td>
+      <td>Yachad/JUF</td>
+      <td>both</td>
+      <td>21+</td>
+      <td>Adults - wide range of developmental disabilities</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Upstate NY</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>greenfieldy@ou.org</td>
+      <td>Summer camp for adults - 2 weeks</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yehuda Greenfield</td>
+      <td>212-613-8164</td>
+      <td>Yachad Vocational Programs</td>
+      <td>Yachad/JUF</td>
+      <td>both</td>
+      <td>21-30</td>
+      <td>Young adults who want to work as specialty staff in a mainstream camp</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>In camps throughout the US and Canada</td>
+      <td>Integrated within mainstream camp</td>
+      <td>NaN</td>
+      <td>greenfieldy@ou.org</td>
+      <td>Full and half summer - opportunity for those who aged out of camp to work at a mainstream camp with support</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yehuda Greenfield</td>
+      <td>212-613-8164</td>
+      <td>Yad B'Yad</td>
+      <td>Yachad/JUF</td>
+      <td>both</td>
+      <td>16-25</td>
+      <td>Mild to moderate developmental disabilities</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Israel Travel Program</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>greenfieldy@ou.org</td>
+      <td>Israel Travel Program with mainstream peers</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Yes</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Shuli Rotberg</td>
+      <td>718-305-7137</td>
+      <td>Yalah</td>
+      <td>Yaldeinu</td>
+      <td>Mixed</td>
+      <td>16-20</td>
+      <td>traveling camp for super high functioning teenage girls that can be part of a group setting with minimal support</td>
+      <td>NaN</td>
+      <td>minor medical needs accommodated</td>
+      <td>catskill NY</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>shuli@yaldeinu.net</td>
+      <td>full summer</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>CD Treisser</td>
+      <td>513-961-9588</td>
+      <td>Yaldei</td>
+      <td>Yaldei</td>
+      <td>Mixed</td>
+      <td>girls 5-20/boys 5-11</td>
+      <td>all levels including significant disabilities</td>
+      <td>NaN</td>
+      <td>some</td>
+      <td>Montreal Canada</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>cdtreisser@gmail.com</td>
+      <td>vaccine mandate in Canada</td>
+      <td>cheaper than most options in US</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yaldeinu</td>
+      <td>NaN</td>
+      <td>Yaldeinu</td>
+      <td>Yaldeinu</td>
+      <td>Mixed</td>
+      <td>5+</td>
+      <td>high functioning ASD</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>catskill NY</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>camp@yaldeinu.net</td>
+      <td>Full Summer</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Chany Rosenberg</td>
+      <td>845-352-7700 Ext. 211</td>
+      <td>Yedidim</td>
+      <td>Rayim</td>
+      <td>Mixed</td>
+      <td>9+</td>
+      <td>High functioning boys without major behavioral / Medical issues</td>
+      <td>NaN</td>
+      <td>Minor medical needs accomodated</td>
+      <td>Bloomingburg, NY</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>crosenberg@rayim.org</td>
+      <td>Full Summer</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Chavy Armon</td>
+      <td>845.517.8603</td>
+      <td>Yedidos</td>
+      <td>Rayim</td>
+      <td>Mixed</td>
+      <td>9+</td>
+      <td>High functioning girls without major behavioral / Medical issues</td>
+      <td>NaN</td>
+      <td>Minor medical needs accomodated</td>
+      <td>Camp Baiseinu</td>
+      <td>Integrated within mainstream camp</td>
+      <td>NaN</td>
+      <td>chavyarmon@gmail.com</td>
+      <td>Full Summer</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Raizy Piller</td>
+      <td>347-362-0799</td>
+      <td>Belz boys</td>
+      <td>Belz</td>
+      <td>boys</td>
+      <td>9-15</td>
+      <td>high functioning boys- that are looking to  attend a special needs program in a mainstream camp.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>raizypiller@gmail.com</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Netanel Platovsk</td>
+      <td>info@starsny.org</td>
+      <td>Stars</td>
+      <td>Private</td>
+      <td>boys</td>
+      <td>ages 10-12</td>
+      <td>boys with social deficits</td>
+      <td>English (5 Towns)</td>
+      <td>NaN</td>
+      <td>Lawrence NY</td>
+      <td>https://forms.gle/Ehkp359euFDjawcr7</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>S Spitzer</td>
+      <td>802-451-0950  \n</td>
+      <td>Ohr Olem</td>
+      <td>Priate</td>
+      <td>both</td>
+      <td>ages 3-12</td>
+      <td>High Functioning Kids ( We have 2 separate groups. One for the very young kids and the second one for older ones)\nLow-functioning children, including those with physical disabilities, non-verbal, autism, including runners, etc. Staff is a 1:1 ratio\n\n</td>
+      <td>Heimish / Chasidish</td>
+      <td>\n\nWe can support basic medical needs, such as medications and feeding tubes. However, we cannot accommodate more complex medical requirements, such as catheters, tracheostomies, etc.</td>
+      <td>NaN</td>
+      <td>Self Contained</td>
+      <td>NaN</td>
+      <td>Ohrolem@outlook.com</td>
+      <td>Full summer</td>
+      <td>Flyer https://hamaspikk-my.sharepoint.com/:b:/g/personal/aschneck_hamaspikkings_org/EYoNigxXTFNLjI_P36j_6OcB0Q2DfEEx-c64Zn2W0jEawQ?e=vt5t60</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table></div><a href="index.html" class="btn btn-secondary mt-3">← Back to Home</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function searchTable(inputId, tableId) {
+    var input = document.getElementById(inputId);
+    var filter = input.value.toLowerCase();
+    var table = document.getElementById(tableId);
+    var trs = table.getElementsByTagName('tr');
+    for (var i = 1; i < trs.length; i++) {
+        var tds = trs[i].getElementsByTagName('td');
+        var show = false;
+        for (var j = 0; j < tds.length; j++) {
+            if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
+                show = true;
+                break;
+            }
+        }
+        trs[i].style.display = show ? '' : 'none';
+    }
+}
+</script>
+</body>
+</html>

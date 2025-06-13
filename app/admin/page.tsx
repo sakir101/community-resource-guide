@@ -1,0 +1,2212 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Plus, Save, Trash2, LogOut, Edit, X, Settings } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { getSettings, saveSettings } from "@/app/lib/settings"
+import type { CategoryDefinition } from "../lib/storage"
+import { IconSelector } from "@/app/components/icon-selector"
+import { getUsers, deleteUser, updateUser, type User } from "@/app/lib/user-storage"
+import { ApprovedEmailsManager } from "./approved-emails"
+
+interface PendingResource {
+  id: string
+  category: string
+  data: any
+  submittedAt: string
+  status: "pending" | "approved" | "rejected"
+}
+
+interface Feedback {
+  id: string
+  category: string
+  resourceName: string
+  resourceData: any
+  feedback: string
+  submittedAt: string
+  status: "pending" | "reviewed" | "resolved"
+}
+
+export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("")
+  const [formData, setFormData] = useState<any>({})
+  const [activeTab, setActiveTab] = useState("add")
+  const [editingItem, setEditingItem] = useState<any>(null)
+  const [editFormData, setEditFormData] = useState<any>({})
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [pendingResources, setPendingResources] = useState<PendingResource[]>([])
+  const [selectedResource, setSelectedResource] = useState<PendingResource | null>(null)
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false)
+  const [adminNotes, setAdminNotes] = useState("")
+  const [feedbackList, setFeedbackList] = useState<Feedback[]>([])
+  const router = useRouter()
+  const { toast } = useToast()
+  const [currentData, setCurrentData] = useState<any>({})
+  const [customCategories, setCustomCategories] = useState<CategoryDefinition[]>([])
+  const [categoryCounts, setCategoryCounts] = useState<{ [key: string]: number }>({})
+  const [newCategoryData, setNewCategoryData] = useState({
+    name: "",
+    label: "",
+    description: "",
+    icon: "Folder",
+    color: "bg-gray-50 text-gray-600 border-gray-200",
+  })
+  const [adminSettings, setAdminSettings] = useState({
+    adminEmail: "",
+    emailNotificationsEnabled: true,
+    web3FormsKey: "",
+  })
+  const [isTestingEmail, setIsTestingEmail] = useState(false)
+  const [categoryFields, setCategoryFields] = useState<any[]>([])
+  const [isAddingField, setIsAddingField] = useState(false)
+  const [newField, setNewField] = useState({
+    name: "",
+    label: "",
+    type: "text",
+    required: false,
+    options: [],
+  })
+  const [editingCategory, setEditingCategory] = useState<CategoryDefinition | null>(null)
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false)
+  const [editCategoryData, setEditCategoryData] = useState({
+    name: "",
+    label: "",
+    description: "",
+    icon: "Folder",
+    color: "bg-gray-50 text-gray-600 border-gray-200",
+  })
+  const [editCategoryFields, setEditCategoryFields] = useState<any[]>([])
+  const [users, setUsers] = useState<User[]>([])
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const isAdmin = localStorage.getItem("isAdmin")
+    const loginTime = localStorage.getItem("adminLoginTime")
+
+    if (isAdmin === "true" && loginTime) {
+      // Check if session is still valid (24 hours)
+      const now = Date.now()
+      const loginTimestamp = Number.parseInt(loginTime)
+      const sessionDuration = 24 * 60 * 60 * 1000 // 24 hours
+
+      if (now - loginTimestamp < sessionDuration) {
+        setIsAuthenticated(true)
+        fetchPendingResources()
+        fetchFeedback()
+        fetchCustomCategories()
+        loadCategoryCounts()
+        fetchUsers()
+      } else {
+        handleLogout()
+      }
+    } else {
+      router.push("/login")
+    }
+  }, [router])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAdminSettings()
+    }
+  }, [isAuthenticated])
+
+  const loadCategoryCounts = async () => {
+    const counts: { [key: string]: number } = {}
+
+    // Default categories
+    const defaultCategories = [
+      "camps",
+      "schools",
+      "medical-supplies",
+      "hamaspik-programs",
+      "contracted-programs",
+      "perks",
+    ]
+
+    for (const category of defaultCategories) {
+      try {
+        const response = await fetch(`/api/resources?category=${category}`)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && Array.isArray(result.data)) {
+            counts[category] = result.data.length
+          }
+        }
+      } catch (error) {
+        console.error(`Error loading count for ${category}:`, error)
+        counts[category] = 0
+      }
+    }
+
+    // Custom categories
+    for (const category of customCategories) {
+      try {
+        const response = await fetch(`/api/resources?category=${category.name}`)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && Array.isArray(result.data)) {
+            counts[category.name] = result.data.length
+          }
+        }
+      } catch (error) {
+        console.error(`Error loading count for ${category.name}:`, error)
+        counts[category.name] = 0
+      }
+    }
+
+    setCategoryCounts(counts)
+  }
+
+  useEffect(() => {
+    if (customCategories.length > 0) {
+      loadCategoryCounts()
+    }
+  }, [customCategories])
+
+  const fetchPendingResources = async () => {
+    try {
+      console.log("🔄 Fetching pending resources from API...")
+      const response = await fetch("/api/pending-resources")
+      const result = await response.json()
+      console.log("📋 API response:", result)
+
+      if (result.success) {
+        console.log("✅ Setting pending resources:", result.data.length, "items")
+        setPendingResources(result.data)
+      } else {
+        console.error("❌ API returned error:", result.message)
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch pending resources:", error)
+    }
+  }
+
+  const fetchFeedback = async () => {
+    try {
+      const response = await fetch("/api/submit-feedback")
+
+      if (!response.ok) {
+        console.error("Failed to fetch feedback - Response not OK:", response.status)
+        return
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        setFeedbackList(result.data || [])
+      } else {
+        console.error("Failed to fetch feedback:", result.message)
+        setFeedbackList([])
+      }
+    } catch (error) {
+      console.error("Failed to fetch feedback:", error)
+      setFeedbackList([])
+    }
+  }
+
+  const fetchCustomCategories = async () => {
+    try {
+      const response = await fetch("/api/categories")
+      const result = await response.json()
+      if (result.success) {
+        setCustomCategories(result.data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch custom categories:", error)
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin")
+    localStorage.removeItem("adminLoginTime")
+    toast({
+      title: "Logged Out",
+      description: "You have been logged out successfully.",
+    })
+    router.push("/login")
+  }
+
+  const allCategories = [
+    {
+      id: "camps",
+      name: "camps",
+      label: "Camps",
+      description: "Summer camps and recreational programs",
+      icon: "Users",
+      color: "bg-green-50 text-green-600 border-green-200",
+      isDefault: true,
+      fields: [
+        { name: "campName", label: "Camp Name", type: "text", required: true },
+        { name: "contactPerson", label: "Contact Person", type: "text", required: true },
+        { name: "phone", label: "Phone", type: "text", required: true },
+        { name: "email", label: "Email", type: "email" },
+        { name: "underAuspicesOf", label: "Under Auspices Of", type: "text" },
+        { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both", "mixed"] },
+        { name: "ages", label: "Ages", type: "text" },
+        { name: "description", label: "Description", type: "textarea" },
+        { name: "location", label: "Location", type: "text" },
+        { name: "integrated", label: "Integration Type", type: "text" },
+        { name: "medicalNeeds", label: "Medical Needs", type: "text" },
+        { name: "tuition", label: "Tuition", type: "text" },
+        { name: "comments", label: "Comments", type: "textarea" },
+      ],
+    },
+    {
+      id: "schools",
+      name: "schools",
+      label: "Schools",
+      description: "Educational institutions and schools",
+      icon: "GraduationCap",
+      color: "bg-blue-50 text-blue-600 border-blue-200",
+      isDefault: true,
+      fields: [
+        { name: "name", label: "School Name", type: "text", required: true },
+        { name: "location", label: "Location", type: "text", required: true },
+        { name: "contactPerson", label: "Contact Person", type: "text", required: true },
+        { name: "phone", label: "Phone", type: "text", required: true },
+        { name: "email", label: "Email", type: "email" },
+        { name: "studentsServed", label: "Students Served", type: "textarea" },
+      ],
+    },
+    {
+      id: "medical-supplies",
+      name: "medical-supplies",
+      label: "Medical Supplies",
+      description: "Medical supplies and equipment resources",
+      icon: "Stethoscope",
+      color: "bg-red-50 text-red-600 border-red-200",
+      isDefault: true,
+      fields: [
+        { name: "resource", label: "Resource Name", type: "text", required: true },
+        { name: "contact", label: "Contact Info", type: "text", required: true },
+        { name: "email", label: "Email", type: "email" },
+        { name: "notes", label: "Notes", type: "textarea" },
+        { name: "moreItems", label: "Additional Items", type: "textarea" },
+      ],
+    },
+    {
+      id: "hamaspik-programs",
+      name: "hamaspik-programs",
+      label: "Hamaspik Programs",
+      description: "Hamaspik organization programs and services",
+      icon: "Heart",
+      color: "bg-purple-50 text-purple-600 border-purple-200",
+      isDefault: true,
+      fields: [
+        { name: "program", label: "Program Name", type: "text", required: true },
+        { name: "gender", label: "Gender", type: "select", options: ["Male", "Female", "Both"] },
+        { name: "functioningLevel", label: "Functioning Level", type: "text" },
+        { name: "location", label: "Location", type: "text" },
+        { name: "daysOpen", label: "Days Open", type: "text" },
+        { name: "contact", label: "Contact", type: "text" },
+        { name: "runBy", label: "Run By", type: "text" },
+      ],
+    },
+    {
+      id: "contracted-programs",
+      name: "contracted-programs",
+      label: "Contracted Programs",
+      description: "Active contracted programs and services",
+      icon: "Building",
+      color: "bg-orange-50 text-orange-600 border-orange-200",
+      isDefault: true,
+      fields: [
+        { name: "name", label: "Program Name", type: "text", required: true },
+        { name: "programType", label: "Program Type", type: "text" },
+        { name: "location", label: "Location", type: "text" },
+        { name: "phone", label: "Phone", type: "text" },
+        { name: "email", label: "Email", type: "email" },
+        { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both"] },
+        { name: "ages", label: "Ages", type: "text" },
+        { name: "whoItsFor", label: "Who It's For", type: "textarea" },
+        { name: "description", label: "Description", type: "textarea" },
+        { name: "toSignUp", label: "How to Sign Up", type: "text" },
+      ],
+    },
+    {
+      id: "perks",
+      name: "perks",
+      label: "Perks",
+      description: "Special perks and benefits available",
+      icon: "Gift",
+      color: "bg-pink-50 text-pink-600 border-pink-200",
+      isDefault: true,
+      fields: [
+        { name: "title", label: "Perk Title", type: "text", required: true },
+        { name: "description", label: "Description", type: "textarea", required: true },
+        { name: "details", label: "Details", type: "textarea" },
+      ],
+    },
+    ...customCategories.map((cat) => ({
+      ...cat,
+      isDefault: false,
+      icon: cat.icon || "Folder", // Ensure icon is always present
+    })),
+  ]
+
+  const categories = [
+    { value: "camps", label: "Camps" },
+    { value: "schools", label: "Schools" },
+    { value: "medical-supplies", label: "Medical Supplies" },
+    { value: "hamaspik-programs", label: "Hamaspik Programs" },
+    { value: "contracted-programs", label: "Contracted Programs" },
+    { value: "perks", label: "Perks" },
+    ...customCategories.map((cat) => ({ value: cat.id, label: cat.label })),
+  ]
+
+  const getFormFields = (category: string) => {
+    // Check if it's a custom category
+    const customCategory = customCategories.find((cat) => cat.id === category)
+    if (customCategory) {
+      return customCategory.fields
+    }
+
+    switch (category) {
+      case "camps":
+        return [
+          { name: "campName", label: "Camp Name", type: "text", required: true },
+          { name: "contactPerson", label: "Contact Person", type: "text", required: true },
+          { name: "phone", label: "Phone", type: "text", required: true },
+          { name: "email", label: "Email", type: "email" },
+          { name: "underAuspicesOf", label: "Under Auspices Of", type: "text" },
+          { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both", "mixed"] },
+          { name: "ages", label: "Ages", type: "text" },
+          { name: "description", label: "Description", type: "textarea" },
+          { name: "location", label: "Location", type: "text" },
+          { name: "integrated", label: "Integration Type", type: "text" },
+          { name: "medicalNeeds", label: "Medical Needs", type: "text" },
+          { name: "tuition", label: "Tuition", type: "text" },
+          { name: "comments", label: "Comments", type: "textarea" },
+        ]
+      case "schools":
+        return [
+          { name: "name", label: "School Name", type: "text", required: true },
+          { name: "location", label: "Location", type: "text", required: true },
+          { name: "contactPerson", label: "Contact Person", type: "text", required: true },
+          { name: "phone", label: "Phone", type: "text", required: true },
+          { name: "email", label: "Email", type: "email" },
+          { name: "studentsServed", label: "Students Served", type: "textarea" },
+        ]
+      case "medical-supplies":
+        return [
+          { name: "resource", label: "Resource Name", type: "text", required: true },
+          { name: "contact", label: "Contact Info", type: "text", required: true },
+          { name: "email", label: "Email", type: "email" },
+          { name: "notes", label: "Notes", type: "textarea" },
+          { name: "moreItems", label: "Additional Items", type: "textarea" },
+        ]
+      case "hamaspik-programs":
+        return [
+          { name: "program", label: "Program Name", type: "text", required: true },
+          { name: "gender", label: "Gender", type: "select", options: ["Male", "Female", "Both"] },
+          { name: "functioningLevel", label: "Functioning Level", type: "text" },
+          { name: "location", label: "Location", type: "text" },
+          { name: "daysOpen", label: "Days Open", type: "text" },
+          { name: "contact", label: "Contact", type: "text" },
+          { name: "runBy", label: "Run By", type: "text" },
+        ]
+      case "contracted-programs":
+        return [
+          { name: "name", label: "Program Name", type: "text", required: true },
+          { name: "programType", label: "Program Type", type: "text" },
+          { name: "location", label: "Location", type: "text" },
+          { name: "phone", label: "Phone", type: "text" },
+          { name: "email", label: "Email", type: "email" },
+          { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both"] },
+          { name: "ages", label: "Ages", type: "text" },
+          { name: "whoItsFor", label: "Who It's For", type: "textarea" },
+          { name: "description", label: "Description", type: "textarea" },
+          { name: "toSignUp", label: "How to Sign Up", type: "text" },
+        ]
+      case "perks":
+        return [
+          { name: "title", label: "Perk Title", type: "text", required: true },
+          { name: "description", label: "Description", type: "textarea", required: true },
+          { name: "details", label: "Details", type: "textarea" },
+        ]
+      default:
+        return []
+    }
+  }
+
+  const handleInputChange = (name: string, value: string) => {
+    setFormData((prev: any) => ({ ...prev, [name]: value }))
+  }
+
+  const handleEditInputChange = (name: string, value: string) => {
+    setEditFormData((prev: any) => ({ ...prev, [name]: value }))
+  }
+
+  const forceRefreshAllData = async () => {
+    console.log("🔄 Force refreshing all data...")
+
+    // Refresh custom categories
+    await fetchCustomCategories()
+
+    // Refresh category counts
+    await loadCategoryCounts()
+
+    // Refresh current category data if one is selected
+    if (selectedCategory) {
+      await refreshData(selectedCategory)
+    }
+
+    toast({
+      title: "Data Refreshed",
+      description: "All data has been refreshed from the latest storage.",
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validate required fields
+    const requiredFields = formFields.filter((field) => field.required)
+    const missingFields = requiredFields.filter((field) => !formData[field.name])
+
+    if (missingFields.length > 0) {
+      toast({
+        title: "Missing Required Fields",
+        description: `Please fill in all required fields: ${missingFields.map((f) => f.label).join(", ")}`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      console.log("Submitting resource:", { category: selectedCategory, data: formData })
+
+      const response = await fetch("/api/resources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "add",
+          category: selectedCategory,
+          data: formData,
+        }),
+      })
+
+      const result = await response.json()
+      console.log("API response:", result)
+
+      if (result.success) {
+        toast({
+          title: "Resource Added Successfully!",
+          description: result.message,
+        })
+
+        // Clear form
+        setFormData({})
+        setSelectedCategory("")
+
+        // Force refresh all data immediately
+        await forceRefreshAllData()
+
+        // Small delay to ensure data is synced, then refresh again
+        setTimeout(async () => {
+          await forceRefreshAllData()
+        }, 500)
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      console.error("Error adding resource:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add resource. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEdit = (category: string, item: any, index: number) => {
+    setEditingItem({ ...item, index, category })
+    setEditFormData({ ...item })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const response = await fetch("/api/resources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "update",
+          category: editingItem.category,
+          index: editingItem.index,
+          data: editFormData,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Resource Updated Successfully!",
+          description: result.message,
+        })
+
+        setIsEditDialogOpen(false)
+        setEditingItem(null)
+        setEditFormData({})
+
+        // Force immediate data refresh with multiple attempts
+        console.log("🔄 Starting comprehensive data refresh after edit...")
+
+        // Refresh the data for the current category immediately
+        await refreshData(editingItem.category)
+
+        // Update category counts
+        await loadCategoryCounts()
+
+        // Force refresh all data
+        await forceRefreshAllData()
+
+        // Trigger storage event for cross-tab sync
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("refreshData"))
+        }
+
+        // Additional refresh after a short delay to ensure persistence
+        setTimeout(async () => {
+          console.log("🔄 Secondary refresh after edit...")
+          await refreshData(editingItem.category)
+          await loadCategoryCounts()
+        }, 1000)
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update resource. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDelete = async (category: string, index: number, itemName: string) => {
+    if (confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`)) {
+      try {
+        const response = await fetch("/api/resources", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "delete",
+            category,
+            index,
+          }),
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          toast({
+            title: "Resource Deleted",
+            description: result.message,
+          })
+
+          // Refresh the data for the current category
+          await refreshData(category)
+          await loadCategoryCounts()
+        } else {
+          throw new Error(result.message)
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete resource. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const openReviewDialog = (resource: PendingResource) => {
+    setSelectedResource(resource)
+    setIsReviewDialogOpen(true)
+    setAdminNotes("")
+  }
+
+  const getItemDisplayName = (item: any, category: string) => {
+    // Check if it's a custom category
+    const customCategory = customCategories.find((cat) => cat.id === category)
+    if (customCategory) {
+      // Use the first field as the display name
+      const firstField = customCategory.fields[0]
+      return item[firstField?.name] || "Unknown"
+    }
+
+    switch (category) {
+      case "camps":
+        return item.campName
+      case "schools":
+        return item.name
+      case "medical-supplies":
+        return item.resource
+      case "hamaspik-programs":
+        return item.program
+      case "contracted-programs":
+        return item.name
+      case "perks":
+        return item.title
+      default:
+        return "Unknown"
+    }
+  }
+
+  const getResourceDisplayName = (resource: PendingResource) => {
+    return getItemDisplayName(resource.data, resource.category)
+  }
+
+  const fetchCurrentData = async (category: string) => {
+    try {
+      const response = await fetch(`/api/resources?category=${category}`)
+      const result = await response.json()
+      if (result.success) {
+        console.log(`Fetched ${category} data:`, result.data.length, "items")
+        return result.data
+      }
+    } catch (error) {
+      console.error("Failed to fetch current data:", error)
+    }
+    return []
+  }
+
+  const refreshData = async (category: string) => {
+    try {
+      console.log(`🔄 Refreshing data for category: ${category}`)
+
+      // Add cache buster to ensure fresh data
+      const response = await fetch(`/api/resources?category=${category}&_t=${Date.now()}`)
+      const result = await response.json()
+
+      if (result.success) {
+        console.log(`✅ Refreshed ${category}: ${result.data.length} items`)
+        setCurrentData((prev) => ({ ...prev, [category]: result.data }))
+        return result.data
+      } else {
+        console.error(`❌ Failed to refresh ${category}:`, result.message)
+      }
+    } catch (error) {
+      console.error(`❌ Error refreshing ${category}:`, error)
+    }
+    return []
+  }
+
+  useEffect(() => {
+    if (selectedCategory) {
+      refreshData(selectedCategory)
+    }
+  }, [selectedCategory])
+
+  const getCurrentCategoryData = (category: string) => {
+    return currentData[category] || []
+  }
+
+  const loadAdminSettings = () => {
+    try {
+      const settings = getSettings()
+      setAdminSettings({
+        adminEmail: settings.adminEmail || "",
+        emailNotifications: settings.emailNotifications ?? true,
+        web3FormsKey: settings.web3FormsKey || "",
+      })
+    } catch (error) {
+      console.error("Failed to load admin settings:", error)
+    }
+  }
+
+  const handleSaveSettings = async () => {
+    try {
+      saveSettings({
+        adminEmail: adminSettings.adminEmail,
+        emailNotifications: adminSettings.emailNotificationsEnabled,
+        web3FormsKey: adminSettings.web3FormsKey,
+      })
+
+      toast({
+        title: "Settings Saved",
+        description: "Your notification settings have been updated successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleTestEmail = async () => {
+    if (!adminSettings.adminEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please set an admin email address first.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsTestingEmail(true)
+
+    try {
+      const response = await fetch("/api/send-notification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "test",
+          email: adminSettings.adminEmail,
+          data: {},
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Test Email Sent!",
+          description: `Check your inbox at ${adminSettings.adminEmail}`,
+        })
+      } else {
+        toast({
+          title: "Email Failed",
+          description: "Failed to send test email. Please check your email address.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Test Failed",
+        description: "Failed to send test email. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsTestingEmail(false)
+    }
+  }
+
+  const recoverData = async () => {
+    try {
+      // Try to restore perks data specifically
+      const response = await fetch("/api/resources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "recover",
+          category: "perks",
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Data Recovered",
+          description: "Perks data has been restored successfully.",
+        })
+
+        // Refresh all data
+        await loadCategoryCounts()
+        if (selectedCategory) {
+          await refreshData(selectedCategory)
+        }
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      toast({
+        title: "Recovery Failed",
+        description: "Failed to recover data. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleAddField = () => {
+    if (!newField.name || !newField.label) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both field name and label.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const field = {
+      ...newField,
+      options: newField.type === "select" ? newField.options : undefined,
+    }
+
+    console.log("Adding field:", field)
+    setCategoryFields((prev) => [...prev, field])
+    setNewField({
+      name: "",
+      label: "",
+      type: "text",
+      required: false,
+      options: [],
+    })
+    setIsAddingField(false)
+
+    toast({
+      title: "Field Added",
+      description: `Field "${newField.label}" has been added to the category.`,
+    })
+  }
+
+  const handleRemoveField = (index: number) => {
+    setCategoryFields((prev) => prev.filter((_, i) => i !== index))
+    toast({
+      title: "Field Removed",
+      description: "Field has been removed from the category.",
+    })
+  }
+
+  const handleEditCategory = (category: any) => {
+    setEditingCategory(category)
+    setEditCategoryData({
+      name: category.name,
+      label: category.label,
+      description: category.description,
+      icon: category.icon,
+      color: category.color,
+    })
+    setEditCategoryFields([...category.fields])
+    setIsEditCategoryDialogOpen(true)
+  }
+
+  const handleCreateCategory = async () => {
+    console.log("🚀 Starting category creation...")
+    console.log("Category data:", newCategoryData)
+    console.log("Category fields:", categoryFields)
+
+    if (!newCategoryData.name || !newCategoryData.label) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both category name and label.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Combine default fields with custom fields
+    const allFields = [
+      { name: "title", label: "Title", type: "text", required: true },
+      { name: "description", label: "Description", type: "textarea", required: true },
+      ...categoryFields,
+    ]
+
+    console.log("All fields for category:", allFields)
+
+    try {
+      const requestBody = {
+        action: "create",
+        category: {
+          id: newCategoryData.name,
+          name: newCategoryData.name,
+          label: newCategoryData.label,
+          description: newCategoryData.description,
+          icon: newCategoryData.icon, // Make sure this is included
+          color: newCategoryData.color || "bg-gray-50 text-gray-600 border-gray-200",
+          fields: allFields,
+        },
+      }
+
+      console.log("📤 Sending request:", requestBody)
+
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      console.log("📥 Response status:", response.status)
+      const result = await response.json()
+      console.log("📥 Response data:", result)
+
+      if (result.success) {
+        toast({
+          title: "Category Created",
+          description: `${newCategoryData.label} category has been created successfully.`,
+        })
+
+        // Reset form
+        setNewCategoryData({
+          name: "",
+          label: "",
+          description: "",
+          icon: "Folder",
+          color: "bg-gray-50 text-gray-600 border-gray-200",
+        })
+        setCategoryFields([])
+
+        // Refresh data
+        await fetchCustomCategories()
+        await loadCategoryCounts()
+      } else {
+        throw new Error(result.message || "Unknown error occurred")
+      }
+    } catch (error) {
+      console.error("❌ Error creating category:", error)
+      toast({
+        title: "Error",
+        description: `Failed to create category: ${error.message}`,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return
+
+    try {
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "update",
+          categoryId: editingCategory.id,
+          categoryData: {
+            ...editCategoryData,
+            fields: editCategoryFields,
+          },
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Category Updated",
+          description: "Category has been updated successfully.",
+        })
+
+        setIsEditCategoryDialogOpen(false)
+        setEditingCategory(null)
+        await fetchCustomCategories()
+        await loadCategoryCounts()
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      console.error("Error updating category:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update category. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteCustomCategory = async (categoryId: string) => {
+    if (confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
+      try {
+        const response = await fetch("/api/categories", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "delete",
+            categoryId,
+          }),
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          toast({
+            title: "Category Deleted",
+            description: "Category has been deleted successfully.",
+          })
+
+          await fetchCustomCategories()
+          await loadCategoryCounts()
+        } else {
+          throw new Error(result.message)
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete category. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const handleApproveResource = async (resourceId: string) => {
+    try {
+      const response = await fetch("/api/pending-resources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "approve",
+          resourceId,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Resource Approved",
+          description: "The resource has been approved and added to the system.",
+        })
+
+        setPendingResources((prev) => prev.filter((r) => r.id !== resourceId))
+        await loadCategoryCounts()
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve resource. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleRejectResource = async (resourceId: string) => {
+    try {
+      const response = await fetch("/api/pending-resources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "reject",
+          resourceId,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Resource Rejected",
+          description: "The resource has been rejected.",
+        })
+
+        setPendingResources((prev) => prev.filter((r) => r.id !== resourceId))
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reject resource. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleMarkFeedbackReviewed = async (feedbackId: string) => {
+    try {
+      const response = await fetch("/api/submit-feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "update_status",
+          feedbackId,
+          status: "reviewed",
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Feedback Updated",
+          description: "Feedback has been marked as reviewed.",
+        })
+
+        setFeedbackList((prev) => prev.map((f) => (f.id === feedbackId ? { ...f, status: "reviewed" } : f)))
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update feedback status. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleMarkFeedbackResolved = async (feedbackId: string) => {
+    try {
+      const response = await fetch("/api/submit-feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "update_status",
+          feedbackId,
+          status: "resolved",
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Feedback Resolved",
+          description: "Feedback has been marked as resolved.",
+        })
+
+        setFeedbackList((prev) => prev.map((f) => (f.id === feedbackId ? { ...f, status: "resolved" } : f)))
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update feedback status. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const fetchUsers = () => {
+    const allUsers = getUsers()
+    setUsers(allUsers)
+  }
+
+  if (!isAuthenticated) {
+    return <div>Loading...</div>
+  }
+
+  const formFields = getFormFields(selectedCategory)
+  const editFormFields = editingItem ? getFormFields(editingItem.category) : []
+  const pendingCount = pendingResources.filter((r) => r.status === "pending").length
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <Button variant="ghost" asChild className="mb-4">
+              <Link href="/">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
+            <p className="text-gray-600">Manage community resources</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={forceRefreshAllData}>
+              🔄 Refresh Data
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                console.log("🔍 Debug info:")
+                console.log("Custom categories:", customCategories)
+                console.log("LocalStorage customCategories:", localStorage.getItem("customCategories"))
+                console.log("Current data:", currentData)
+                console.log("Category counts:", categoryCounts)
+
+                // Try to reload categories
+                fetchCustomCategories()
+              }}
+            >
+              Debug Categories
+            </Button>
+            <Button variant="outline" onClick={recoverData}>
+              Recover Data
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-8">
+            <TabsTrigger value="add">Add Resources</TabsTrigger>
+            <TabsTrigger value="manage">Manage Resources</TabsTrigger>
+            <TabsTrigger value="categories">Manage Categories</TabsTrigger>
+            <TabsTrigger value="pending" className="relative">
+              Pending Approvals
+              {pendingCount > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 text-xs">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="relative">
+              User Feedback
+              {feedbackList.filter((f) => f.status === "pending").length > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                  {feedbackList.filter((f) => f.status === "pending").length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="users">Manage Users</TabsTrigger>
+            <TabsTrigger value="approved-emails">Approved Emails</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+
+          {/* Existing tabs content... */}
+
+          {/* Add this new tab content */}
+          <TabsContent value="approved-emails">
+            <ApprovedEmailsManager />
+          </TabsContent>
+
+          {/* Rest of the tabs content... */}
+
+          {/* Add Resources Tab */}
+          <TabsContent value="add">
+            <Card className="max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add New Resource
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label} ({categoryCounts[category.value] || 0} items)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {selectedCategory && (
+                    <>
+                      {formFields.map((field) => (
+                        <div key={field.name} className="space-y-2">
+                          <Label htmlFor={field.name}>
+                            {field.label}
+                            {field.required && <span className="text-red-500 ml-1">*</span>}
+                          </Label>
+
+                          {field.type === "textarea" ? (
+                            <Textarea
+                              id={field.name}
+                              value={formData[field.name] || ""}
+                              onChange={(e) => handleInputChange(field.name, e.target.value)}
+                              required={field.required}
+                              rows={3}
+                            />
+                          ) : field.type === "select" ? (
+                            <Select
+                              value={formData[field.name] || ""}
+                              onValueChange={(value) => handleInputChange(field.name, value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {field.options?.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id={field.name}
+                              type={field.type}
+                              value={formData[field.name] || ""}
+                              onChange={(e) => handleInputChange(field.name, e.target.value)}
+                              required={field.required}
+                            />
+                          )}
+                        </div>
+                      ))}
+
+                      <Button type="submit" className="w-full">
+                        <Save className="w-4 h-4 mr-2" />
+                        Add Resource
+                      </Button>
+                    </>
+                  )}
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Manage Resources Tab */}
+          <TabsContent value="manage">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="manage-category">Select Category to Manage</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="max-w-md">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label} ({categoryCounts[category.value] || 0} items)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedCategory && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Manage {categories.find((c) => c.value === selectedCategory)?.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {getCurrentCategoryData(selectedCategory).map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                        >
+                          <div className="flex-1">
+                            <h3 className="font-medium text-gray-900">{getItemDisplayName(item, selectedCategory)}</h3>
+                            <p className="text-sm text-gray-500">
+                              {selectedCategory === "camps" && `Contact: ${item.contactPerson}`}
+                              {selectedCategory === "schools" && `Location: ${item.location}`}
+                              {selectedCategory === "medical-supplies" && `Contact: ${item.contact}`}
+                              {selectedCategory === "hamaspik-programs" && `Location: ${item.location}`}
+                              {selectedCategory === "contracted-programs" && `Type: ${item.programType}`}
+                              {selectedCategory === "perks" && item.description}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(selectedCategory, item, index)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() =>
+                                handleDelete(selectedCategory, index, getItemDisplayName(item, selectedCategory))
+                              }
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Manage Categories Tab */}
+          <TabsContent value="categories">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Create New Category</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="categoryName">Category Name</Label>
+                        <Input
+                          id="categoryName"
+                          value={newCategoryData.name}
+                          onChange={(e) => setNewCategoryData((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="e.g., therapy-services"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="categoryLabel">Display Label</Label>
+                        <Input
+                          id="categoryLabel"
+                          value={newCategoryData.label}
+                          onChange={(e) => setNewCategoryData((prev) => ({ ...prev, label: e.target.value }))}
+                          placeholder="e.g., Therapy Services"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="categoryDescription">Description</Label>
+                      <Textarea
+                        id="categoryDescription"
+                        value={newCategoryData.description}
+                        onChange={(e) => setNewCategoryData((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="Brief description of this category"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="categoryIcon">Category Icon</Label>
+                      <IconSelector
+                        selectedIcon={newCategoryData.icon}
+                        onIconSelect={(iconName) => setNewCategoryData((prev) => ({ ...prev, icon: iconName }))}
+                      />
+                    </div>
+
+                    {/* Fields Management */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label>Category Fields</Label>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setIsAddingField(true)}>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Field
+                        </Button>
+                      </div>
+
+                      {/* Default Fields */}
+                      <div className="space-y-2">
+                        <div className="p-3 border rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium">Title</span>
+                              <span className="text-sm text-gray-500 ml-2">(Text, Required)</span>
+                            </div>
+                            <Badge variant="outline">Default</Badge>
+                          </div>
+                        </div>
+                        <div className="p-3 border rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium">Description</span>
+                              <span className="text-sm text-gray-500 ml-2">(Textarea, Required)</span>
+                            </div>
+                            <Badge variant="outline">Default</Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Custom Fields */}
+                      {categoryFields.map((field, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <span className="font-medium">{field.label}</span>
+                            <span className="text-sm text-gray-500 ml-2">
+                              ({field.type}, {field.required ? "Required" : "Optional"})
+                            </span>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveField(index)}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      {/* Add Field Form */}
+                      {isAddingField && (
+                        <div className="p-4 border rounded-lg bg-blue-50">
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="fieldName">Field Name</Label>
+                                <Input
+                                  id="fieldName"
+                                  value={newField.name}
+                                  onChange={(e) => setNewField((prev) => ({ ...prev, name: e.target.value }))}
+                                  placeholder="e.g., contactPhone"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="fieldLabel">Field Label</Label>
+                                <Input
+                                  id="fieldLabel"
+                                  value={newField.label}
+                                  onChange={(e) => setNewField((prev) => ({ ...prev, label: e.target.value }))}
+                                  placeholder="e.g., Contact Phone"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="fieldType">Field Type</Label>
+                                <Select
+                                  value={newField.type}
+                                  onChange={(value) => setNewField((prev) => ({ ...prev, type: value }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="text">Text</SelectItem>
+                                    <SelectItem value="email">Email</SelectItem>
+                                    <SelectItem value="tel">Phone</SelectItem>
+                                    <SelectItem value="textarea">Textarea</SelectItem>
+                                    <SelectItem value="select">Select</SelectItem>
+                                    <SelectItem value="number">Number</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex items-center space-x-2 pt-6">
+                                <input
+                                  type="checkbox"
+                                  id="fieldRequired"
+                                  checked={newField.required}
+                                  onChange={(e) => setNewField((prev) => ({ ...prev, required: e.target.checked }))}
+                                />
+                                <Label htmlFor="fieldRequired">Required</Label>
+                              </div>
+                            </div>
+                            {newField.type === "select" && (
+                              <div>
+                                <Label htmlFor="fieldOptions">Options (comma-separated)</Label>
+                                <Input
+                                  id="fieldOptions"
+                                  value={newField.options.join(", ")}
+                                  onChange={(e) =>
+                                    setNewField((prev) => ({
+                                      ...prev,
+                                      options: e.target.value
+                                        .split(",")
+                                        .map((opt) => opt.trim())
+                                        .filter((opt) => opt),
+                                    }))
+                                  }
+                                  placeholder="Option 1, Option 2, Option 3"
+                                />
+                              </div>
+                            )}
+                            <div className="flex space-x-2">
+                              <Button type="button" size="sm" onClick={handleAddField}>
+                                Add Field
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setIsAddingField(false)
+                                  setNewField({
+                                    name: "",
+                                    label: "",
+                                    type: "text",
+                                    required: false,
+                                    options: [],
+                                  })
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <Button onClick={handleCreateCategory}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Category
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Existing Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {allCategories.map((category) => (
+                      <div
+                        key={category.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{category.label}</h3>
+                          <p className="text-sm text-gray-500">{category.description}</p>
+                          <div className="flex items-center mt-2 space-x-4">
+                            <Badge variant="secondary">{categoryCounts[category.name] || 0} items</Badge>
+                            <Badge variant="outline">{category.fields?.length || 0} fields</Badge>
+                            {category.isDefault && <Badge variant="outline">Default</Badge>}
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditCategory(category)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {!category.isDefault && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteCustomCategory(category.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Pending Approvals Tab */}
+          <TabsContent value="pending">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  Pending Resource Approvals
+                  {pendingCount > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {pendingCount} pending
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingResources.length > 0 ? (
+                  <div className="space-y-4">
+                    {pendingResources
+                      .filter((resource) => resource.status === "pending")
+                      .map((resource) => (
+                        <div key={resource.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">{getResourceDisplayName(resource)}</h3>
+                              <p className="text-sm text-gray-500 mb-2">
+                                Category: {categories.find((c) => c.value === resource.category)?.label}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Submitted: {new Date(resource.submittedAt).toLocaleDateString()}
+                              </p>
+                              <div className="mt-3 p-3 bg-gray-50 rounded text-sm">
+                                <strong>Resource Details:</strong>
+                                <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(resource.data, null, 2)}</pre>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2 ml-4">
+                              <Button variant="default" size="sm" onClick={() => handleApproveResource(resource.id)}>
+                                Approve
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => handleRejectResource(resource.id)}>
+                                Reject
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openReviewDialog(resource)}>
+                                Review
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No pending approvals at this time.</p>
+                  </div>
+                )}
+                {/* Debug section - remove this after testing */}
+                {process.env.NODE_ENV === "development" && (
+                  <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                    <h3 className="font-bold">Debug: Pending Resources ({pendingResources.length})</h3>
+                    <pre className="text-xs mt-2">{JSON.stringify(pendingResources, null, 2)}</pre>
+                    <Button onClick={fetchPendingResources} variant="outline" size="sm" className="mt-2">
+                      Refresh Pending Resources
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* User Feedback Tab */}
+          <TabsContent value="feedback">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  User Feedback
+                  {feedbackList.filter((f) => f.status === "pending").length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {feedbackList.filter((f) => f.status === "pending").length} new
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {feedbackList.length > 0 ? (
+                  <div className="space-y-4">
+                    {feedbackList.map((feedback) => (
+                      <div key={feedback.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h3 className="font-medium text-gray-900">{feedback.resourceName}</h3>
+                              <Badge
+                                variant={feedback.status === "pending" ? "secondary" : "outline"}
+                                className="text-xs"
+                              >
+                                {feedback.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-500 mb-2">
+                              Category: {categories.find((c) => c.value === feedback.category)?.label}
+                            </p>
+                            <div className="bg-blue-50 p-3 rounded text-sm mb-3">
+                              <strong>Feedback:</strong>
+                              <p className="mt-1">{feedback.feedback}</p>
+                            </div>
+                            <p className="text-xs text-gray-400">
+                              Submitted: {new Date(feedback.submittedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2 ml-4">
+                            {feedback.status === "pending" && (
+                              <>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleMarkFeedbackReviewed(feedback.id)}
+                                >
+                                  Mark Reviewed
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleMarkFeedbackResolved(feedback.id)}
+                                >
+                                  Mark Resolved
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No feedback submitted yet.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* User Management Tab */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  Manage Users
+                  <Badge variant="secondary" className="ml-2">
+                    {users.length} total users
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{user.email}</h3>
+                        <div className="flex items-center space-x-4 mt-1">
+                          <p className="text-sm text-gray-500">
+                            Created: {new Date(user.createdAt).toLocaleDateString()}
+                          </p>
+                          {user.lastLogin && (
+                            <p className="text-sm text-gray-500">
+                              Last login: {new Date(user.lastLogin).toLocaleDateString()}
+                            </p>
+                          )}
+                          <Badge variant={user.isActive ? "default" : "secondary"}>
+                            {user.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updatedUser = { ...user, isActive: !user.isActive }
+                            const success = updateUser(updatedUser)
+                            if (success) {
+                              fetchUsers()
+                              toast({
+                                title: "User Updated",
+                                description: `${user.email} is now ${user.isActive ? "deactivated" : "activated"}.`,
+                              })
+                            }
+                          }}
+                        >
+                          {user.isActive ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            if (
+                              confirm(`Are you sure you want to delete ${user.email}? This action cannot be undone.`)
+                            ) {
+                              const success = deleteUser(user.id)
+                              if (success) {
+                                fetchUsers()
+                                toast({
+                                  title: "User Deleted",
+                                  description: `${user.email} has been removed.`,
+                                })
+                              }
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {users.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No users found.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Simplified Settings Tab */}
+          <TabsContent value="settings">
+            <Card className="max-w-lg mx-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Settings className="w-5 h-5 mr-2" />
+                  Notification Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="adminEmail">Admin Email Address</Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={adminSettings.adminEmail}
+                      onChange={(e) => setAdminSettings((prev) => ({ ...prev, adminEmail: e.target.value }))}
+                      placeholder="admin@example.com"
+                    />
+                    <p className="text-sm text-gray-500">This email will receive notifications for:</p>
+                    <ul className="text-sm text-gray-500 list-disc list-inside ml-4 space-y-1">
+                      <li>New resources submitted by users</li>
+                      <li>User feedback and suggestions</li>
+                      <li>Resource updates and modifications</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <Button onClick={handleSaveSettings} className="flex-1">
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Email Settings
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleTestEmail}
+                      disabled={!adminSettings.adminEmail || isTestingEmail}
+                    >
+                      {isTestingEmail ? "Sending..." : "Test Email"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                Edit {editingItem && getItemDisplayName(editingItem, editingItem.category)}
+                <Button variant="ghost" size="sm" onClick={() => setIsEditDialogOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+
+            {editingItem && (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                {editFormFields.map((field) => (
+                  <div key={field.name} className="space-y-2">
+                    <Label htmlFor={`edit-${field.name}`}>
+                      {field.label}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+
+                    {field.type === "textarea" ? (
+                      <Textarea
+                        id={`edit-${field.name}`}
+                        value={editFormData[field.name] || ""}
+                        onChange={(e) => handleEditInputChange(field.name, e.target.value)}
+                        required={field.required}
+                        rows={3}
+                      />
+                    ) : field.type === "select" ? (
+                      <Select
+                        value={editFormData[field.name] || ""}
+                        onValueChange={(value) => handleEditInputChange(field.name, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.options?.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id={`edit-${field.name}`}
+                        type={field.type}
+                        value={editFormData[field.name] || ""}
+                        onChange={(e) => handleEditInputChange(field.name, e.target.value)}
+                        required={field.required}
+                      />
+                    )}
+                  </div>
+                ))}
+
+                <div className="flex space-x-2 pt-4">
+                  <Button type="submit" className="flex-1">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Review Dialog */}
+        <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Review Resource</DialogTitle>
+              <Button variant="ghost" onClick={() => setIsReviewDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogHeader>
+            {selectedResource && (
+              <>
+                <div className="mb-4">
+                  <h3 className="font-medium text-gray-900">{getResourceDisplayName(selectedResource)}</h3>
+                  <p className="text-sm text-gray-500">
+                    Category: {categories.find((c) => c.value === selectedResource.category)?.label}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Submitted: {new Date(selectedResource.submittedAt).toLocaleDateString()}
+                  </p>
+                  <div className="mt-3 p-3 bg-gray-50 rounded text-sm">
+                    <strong>Resource Details:</strong>
+                    <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(selectedResource.data, null, 2)}</pre>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminNotes">Admin Notes</Label>
+                  <Textarea
+                    id="adminNotes"
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Add any notes or feedback here..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsReviewDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      // Approve the resource and add admin notes
+                      try {
+                        const response = await fetch("/api/pending-resources", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            action: "approve",
+                            resourceId: selectedResource.id,
+                            adminNotes,
+                          }),
+                        })
+                        const result = await response.json()
+                        if (result.success) {
+                          toast({
+                            title: "Resource Approved",
+                            description: "The resource has been approved and added to the system.",
+                          })
+                          setPendingResources((prev) => prev.filter((r) => r.id !== selectedResource.id))
+                          await loadCategoryCounts()
+                          setIsReviewDialogOpen(false)
+                        } else {
+                          throw new Error(result.message)
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to approve resource. Please try again.",
+                          variant: "destructive",
+                        })
+                      }
+                    }}
+                  >
+                    Approve
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Category Dialog */}
+        <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+              <Button variant="ghost" onClick={() => setIsEditCategoryDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogHeader>
+            {editingCategory && (
+              <form onSubmit={handleUpdateCategory} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editCategoryName">Category Name</Label>
+                  <Input
+                    id="editCategoryName"
+                    value={editCategoryData.name}
+                    onChange={(e) => setEditCategoryData((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g., therapy-services"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editCategoryLabel">Display Label</Label>
+                  <Input
+                    id="editCategoryLabel"
+                    value={editCategoryData.label}
+                    onChange={(e) => setEditCategoryData((prev) => ({ ...prev, label: e.target.value }))}
+                    placeholder="e.g., Therapy Services"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editCategoryDescription">Description</Label>
+                  <Textarea
+                    id="editCategoryDescription"
+                    value={editCategoryData.description}
+                    onChange={(e) => setEditCategoryData((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description of this category"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Category Fields</Label>
+                  </div>
+                  {editCategoryFields.map((field, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <span className="font-medium">{field.label}</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({field.type}, {field.required ? "Required" : "Optional"})
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditCategoryFields((prev) => prev.filter((_, i) => i !== index))
+                          toast({
+                            title: "Field Removed",
+                            description: "Field has been removed from the category.",
+                          })
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex space-x-2 pt-4">
+                  <Button type="submit" className="flex-1">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsEditCategoryDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
+}

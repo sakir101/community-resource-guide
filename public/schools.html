@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schools - Resource Guide</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 2rem 0; background-color: #f8f9fa; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .search-bar { margin-bottom: 2rem; }
+        .resource-table th { background-color: #007bff; color: white; }
+        .resource-table td { vertical-align: top; padding: 0.75rem; }
+        .category-card { margin-bottom: 1rem; }
+        .category-card:hover { transform: translateY(-2px); transition: all 0.3s; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mb-4 text-center text-primary">Schools - Resource Guide</h1>
+    <input type="text" id="searchInput" class="form-control search-bar" onkeyup="searchTable('searchInput', 'resourceTable')" placeholder="Search Schools..."><div class="table-responsive"><table class="dataframe table table-striped resource-table" id="resourceTable">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Name of School</th>
+      <th>Location</th>
+      <th>Contact Person</th>
+      <th>Phone Number</th>
+      <th>Email Address</th>
+      <th>Students We Service</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Gan Yisroel</td>
+      <td>13 Church Ave</td>
+      <td>Itty Kupperman</td>
+      <td>718 435-0101 ext 2024</td>
+      <td>ik@ganyisroel.org</td>
+      <td>One track services children with special needs, another track services children with learning disabilities</td>
+    </tr>
+    <tr>
+      <td>Ahuvim</td>
+      <td>1536-62nd Street</td>
+      <td>Mrs. Halpert</td>
+      <td>718 854 1420 ext 0</td>
+      <td>lhalpert@ichudmosdos.org</td>
+      <td>Boys ages 5-13 with an ASD diagnosis, social delays, developmental delays, and behavioral issues</td>
+    </tr>
+    <tr>
+      <td>Atidaynu</td>
+      <td>7914 Bay Parkway\nBrooklyn, NY 11214</td>
+      <td>Esther Endzweig</td>
+      <td>718 233 9090</td>
+      <td>esther@atidaynuourfuture.com</td>
+      <td>SpEd boys and girls from ages 5 and up</td>
+    </tr>
+    <tr>
+      <td>Bais Yaakov of Bay Parkway  \n(JCSE Girls' Program)</td>
+      <td>NaN</td>
+      <td>Mrs. Chavie Silverberg</td>
+      <td>718-781-9869</td>
+      <td>jcsegirls@gmail.com</td>
+      <td>Girls  ages 5-15 who have the capacity to learn academics in a small group setting.  We modify a Bais Yaakov \ntype curriculum using multisensory approaches and individualized instruction</td>
+    </tr>
+    <tr>
+      <td>Bi-Y District 75-Crown Heights</td>
+      <td>900 St Marks, Crown Heights</td>
+      <td>Sharon Richman\nShaindy Nathan</td>
+      <td>717-774-3787\n347-576-0733</td>
+      <td>srichman22@schools.nyc.gov</td>
+      <td>multi handicapped and 6:1:1</td>
+    </tr>
+    <tr>
+      <td>Bi-Y Williamsburg</td>
+      <td>Williamsburg</td>
+      <td>Ruchie Weingarten</td>
+      <td>347-446-6073</td>
+      <td>rwasner@schools.nyc.gov</td>
+      <td>Children with Down Syndrome and children that are Intellectually disabled, who fit the ACES profile</td>
+    </tr>
+    <tr>
+      <td>Challenge Early Intervention ABA Center</td>
+      <td>NaN</td>
+      <td>Shaindy Landau, MS Ed, Director</td>
+      <td>718 851 3300 ext 290</td>
+      <td>landaus@challenge-ei.com</td>
+      <td>toddlers with Dx of ASD</td>
+    </tr>
+    <tr>
+      <td>Challenge Early Intervention ABA Center</td>
+      <td>Queens</td>
+      <td>Rosemarie Tsigos, MS Ed BCBA</td>
+      <td>718 851 3300 ext 316</td>
+      <td>tsigosr@challenge-ei.com</td>
+      <td>toddlers with DX of ASD</td>
+    </tr>
+    <tr>
+      <td>Challenge Early Intervention ABA Center</td>
+      <td>Staten Island</td>
+      <td>Shoshana Gifter, MS Ed, BCBA</td>
+      <td>718 851 3300 ext 251</td>
+      <td>gifters@challenge-ei.com</td>
+      <td>toddlers with Dx of ASD</td>
+    </tr>
+    <tr>
+      <td>Chayeinu Academy</td>
+      <td>Boro Park</td>
+      <td>Deena Winegarten</td>
+      <td>718 303 9170</td>
+      <td>info@chayeinuacademy.org</td>
+      <td>Children with special needs ages 5-9 who would benefit from a language based learning program</td>
+    </tr>
+    <tr>
+      <td>CLAP by Encore</td>
+      <td>Boro Park</td>
+      <td>Faigy Schwartz</td>
+      <td>718 304 9977</td>
+      <td>CLAP@encoresupport.org</td>
+      <td>Students within mainstream schools who need a self contained setting with mainstream opportunities</td>
+    </tr>
+    <tr>
+      <td>Eis Lasois</td>
+      <td>6205-15th Ave and\n22 Middleton Street</td>
+      <td>Chaya Hindy Baumwolspinner (Boro Park)\nShaindy Rapps (Williamsburg)</td>
+      <td>718-303-9400</td>
+      <td>CBaumwolspiner@eislaasois.org\nSRapps@eislaasois.org</td>
+      <td>Bilingual yiddish children ages 3-5</td>
+    </tr>
+    <tr>
+      <td>Gesher Yehuda</td>
+      <td>49 Ave T \nBrooklyn NY 11223</td>
+      <td>Mrs. Deborah Katz-principal</td>
+      <td>718-714-7400</td>
+      <td>Info@gesheryehuda.org</td>
+      <td>Elementary aged boys and girls with learning disabilities</td>
+    </tr>
+    <tr>
+      <td>Hadran Academy / Yeshivas Hadran</td>
+      <td>Boro Park</td>
+      <td>Zev Reisman</td>
+      <td>718 210 1722</td>
+      <td>zreisman@hadranacademy.org</td>
+      <td>Teenagers ages 13+ with high functioning autism</td>
+    </tr>
+    <tr>
+      <td>HASC</td>
+      <td>1311 55th Street \nBrooklyn NY 11219</td>
+      <td>Julie Ben-Zvi</td>
+      <td>718 851 6100</td>
+      <td>julie.ben-zvi@hasc.net</td>
+      <td>Preschoolers with a disability ages 3-5 - English,  IABP for Yiddish, Hebrew, Russian</td>
+    </tr>
+    <tr>
+      <td>HASC</td>
+      <td>6220-14th Ave</td>
+      <td>Naomi Goldzweig/Esther Berger</td>
+      <td>718.331.1624</td>
+      <td>Esther.Berger @hasc.net</td>
+      <td>We are a school age program ages 5-21 that service the intellectually disabled,autism,multiply handicapped, \nand emotionally disturbed population.</td>
+    </tr>
+    <tr>
+      <td>Ichud High School</td>
+      <td>Brooklyn</td>
+      <td>Breindy Eichenstein</td>
+      <td>7188542400 ext 2210</td>
+      <td>hsoffice@ichudmosdos.org</td>
+      <td>High School Special Ed in a mainstream setting</td>
+    </tr>
+    <tr>
+      <td>Ichud Mosdos Hachinuch</td>
+      <td>1563 49th Street\nBrooklyn, NY 11219</td>
+      <td>Leah Leser - Secretary</td>
+      <td>718-854-2400 #2206</td>
+      <td>girlsichud@gmail.com</td>
+      <td>Students with learning disabilities</td>
+    </tr>
+    <tr>
+      <td>Ichud-Boys/Masmidim</td>
+      <td>1563-49th Street</td>
+      <td>Mrs. Reinhold</td>
+      <td>718 854 2400 ext 2211</td>
+      <td>hreinhold@ichudmosdos.org</td>
+      <td>Boys ages 5-13 with learning disabilities or kriah struggles</td>
+    </tr>
+    <tr>
+      <td>Imagine</td>
+      <td>1458 East 14th Street\nBrooklyn, NY 11230</td>
+      <td>Secretary</td>
+      <td>718 376 8882</td>
+      <td>info@imagine academy.org</td>
+      <td>Children ages 5-21 with an ASD diagnosis</td>
+    </tr>
+    <tr>
+      <td>IVDU Long Island</td>
+      <td>410 Hungry Harbor Road \nValley Stream, NY</td>
+      <td>Alumah Pitterman</td>
+      <td>516-665-0043</td>
+      <td>rudolpha@ou.org</td>
+      <td>Children ages 5-14, diagnoses of autism, speech and language/communication challenges</td>
+    </tr>
+    <tr>
+      <td>IVDU-Boys High School</td>
+      <td>1760 53rd street</td>
+      <td>Chavie Kahn</td>
+      <td>718 758 2999</td>
+      <td>KahnC@ou.org</td>
+      <td>Broad range of special needs</td>
+    </tr>
+    <tr>
+      <td>IVDU-Girls High School</td>
+      <td>1244 east 7th street</td>
+      <td>Malky Halberstam</td>
+      <td>718 758 2999</td>
+      <td>Halberstamm@ou.org</td>
+      <td>Broad range of special needs</td>
+    </tr>
+    <tr>
+      <td>Jumpstart ABA Center</td>
+      <td>2294 Nostrand Ave \nBrooklyn, NY 11210</td>
+      <td>Nechamie Botknecht</td>
+      <td>347-390-1350</td>
+      <td>nbotknecht@jumpstarteip.com</td>
+      <td>Children with Autism, or other diagnosis that are eligible for ABA Therapy through EI. Ages 2 - EI age out.</td>
+    </tr>
+    <tr>
+      <td>Kochavim/Star Learning Center</td>
+      <td>5314 16th Avenue #292</td>
+      <td>Office/Yitty Fisch</td>
+      <td>718 489 9599</td>
+      <td>info@kochavimcare.org</td>
+      <td>Medically fragile without significant cognitive delays</td>
+    </tr>
+    <tr>
+      <td>Lev Uvois</td>
+      <td>75 Ross Street, \nBrooklyn, NY 11249</td>
+      <td>Rabbi Moshe Klein/Principal</td>
+      <td>718-486-6561 ext.0</td>
+      <td>mklein@levuvois.org</td>
+      <td>Boys ages 5-13 with learning disabilities, behavior and emotional issues.</td>
+    </tr>
+    <tr>
+      <td>Little Giants</td>
+      <td>4502 13 Avenue \nBrooklyn NY 11219</td>
+      <td>Mr. Garfinkel</td>
+      <td>718-577-8486</td>
+      <td>info@littlegiantscc.com</td>
+      <td>Children with developmental delays ages 18 months- 4 years</td>
+    </tr>
+    <tr>
+      <td>Machon Lev Seminary</td>
+      <td>Boro Park</td>
+      <td>Mrs Chaya Rachel Taub\nMrs. Raizy Schwarzmer</td>
+      <td>718 854 2747 x2260  \n718-854-2744 x1210</td>
+      <td>r.taub@hcsny.org\nr.schwarzmer@hcsny.org</td>
+      <td>Post high school girls on OPWDD who have gone through a mainstream (or special ed) school</td>
+    </tr>
+    <tr>
+      <td>Makor College Experience</td>
+      <td>NaN</td>
+      <td>Dr. Stephen Glicksman</td>
+      <td>347-390-1315</td>
+      <td>sglicksman@makorDS.org</td>
+      <td>The typical Makor student should be eager to continue his formal education after high school; have a strong motivation to learn and gain skills; have a long-term goal of finding gainful employment; be excited to become involved in campus life; and should be able to independently enjoy campus life with minimal supervision. To be eligible for the program, a student must: 1) Have a diagnosed intellectual or developmental disability; and 2) have a history of special education and/or State funded services for individuals with intellectual or developmental disabilities; and 3) have attended a high school program designed for students with intellectual or developmental disabilities.</td>
+    </tr>
+    <tr>
+      <td>Masterminds School</td>
+      <td>1200 Ocean Pkwy\nBrooklyn, NY 11230</td>
+      <td>Hendel Lefkowitz</td>
+      <td>718-370-3140</td>
+      <td>info@mastermindsaba.org</td>
+      <td>Students who need 1:1 support for academic, behavioral, language skills</td>
+    </tr>
+    <tr>
+      <td>Ohr Dovid</td>
+      <td>Flatbush</td>
+      <td>Secretary Miss Vogel</td>
+      <td>718 951 3650</td>
+      <td>office@haorbeacon.com</td>
+      <td>Elementary school aged boys with behavior challenges, a range of academic levels and diagnoses</td>
+    </tr>
+    <tr>
+      <td>Ohr Hayashar</td>
+      <td>1861-52nd Street</td>
+      <td>Rabbi Herman</td>
+      <td>718 490 6298</td>
+      <td>mherman@hcsny.org</td>
+      <td>Boys ages 13-20 that are struggling academically or have physical disabilitites, and are verbal</td>
+    </tr>
+    <tr>
+      <td>Ohr Torah</td>
+      <td>4615 14th Avenue</td>
+      <td>Secretary</td>
+      <td>718-972-7348</td>
+      <td>info@yohrtorah.org</td>
+      <td>Yiddish speaking boys with language, learning and Kriah dificulties.</td>
+    </tr>
+    <tr>
+      <td>Reach for the Stars Learning Center</td>
+      <td>1818 Avenue P\nBrooklyn NY 11229</td>
+      <td>Director Barbara Matalon</td>
+      <td>718-677-0797</td>
+      <td>BarbaraM@ReachfortheStarsLC.org.\nDianaA@ReachfortheStarsLC.org</td>
+      <td>Students on the Autism spectrum age 3-21</td>
+    </tr>
+    <tr>
+      <td>S.T.E.P.</td>
+      <td>2555 Nostrand Avenue\nBrooklyn, N.Y. 11210</td>
+      <td>Rabbi Shapiro</td>
+      <td>718 252 8822</td>
+      <td>stepteacher@gmail.com</td>
+      <td>boys and girls (separate classes) ages 5-21 + Day Hab for over 21</td>
+    </tr>
+    <tr>
+      <td>Strivright-Auditory/Oral School of NY</td>
+      <td>3321 Avenue M\nBrooklyn, NY 11210</td>
+      <td>Miriam Feuchtwanger / \nIntake Department</td>
+      <td>718-531-1800x6 or 347-598-3499</td>
+      <td>intake@strivright.org</td>
+      <td>Strivright/AOSNY is an Early Intervention and Preschool Program serving children birth - 5.  Strivright's EI \n home-based program services children with a wide range of delays/challenges.  Our EI centerbased program \ncaters to children with speech/language/listening difficulties, specializing with children with hearing loss and processing delays. Strivright's preschool program (ages 3-5) is an auditory-language enriched program servicing children with hearing loss and auditory processing challenges. SEIT services are offered for preschool aged children. Audiological services and Auditory Processing evaluations and intervention are provided.</td>
+    </tr>
+    <tr>
+      <td>The Hamaspik School</td>
+      <td>926 Bedford Ave\nBrooklyn, NY 11205</td>
+      <td>Idy Weiss</td>
+      <td>718-302-3333 ext 5230</td>
+      <td>school@hamaspikkings.org</td>
+      <td>Girls and boys with Down Syndrome ages 5+</td>
+    </tr>
+    <tr>
+      <td>Tiferes Mordechai Center for Integrated Learning</td>
+      <td>Williamsburg NY</td>
+      <td>Adina Knopfler</td>
+      <td>718 452 1300</td>
+      <td>centerforil@gmail.com</td>
+      <td>Students with autism, multiple handicaps, intellectual disability and speech and language impairment</td>
+    </tr>
+    <tr>
+      <td>Yaldeinu</td>
+      <td>1600-63rd Street</td>
+      <td>Esty Gottesman</td>
+      <td>718-851-0123</td>
+      <td>info@yaldeinu.net</td>
+      <td>High functioning students with ASD and related diagnoses that can benefit from a structured 1:1 setting</td>
+    </tr>
+    <tr>
+      <td>Yeled V'Yalda</td>
+      <td>1312-38th Street</td>
+      <td>Secretary</td>
+      <td>718 686 3700</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yeshiva Binyan Olem</td>
+      <td>Brooklyn N.Y.</td>
+      <td>Rabbi Koenig</td>
+      <td>718-704-0687</td>
+      <td>ykoenig@binyanolem.org</td>
+      <td>Biyan Olem is for boys with high to moderate functioning autism and other learning disabilities. Pre and post-bar mitzvah up to age 18. Our comprehensive approach includes ABA and all related services + music and drama therapy. Our clases reng from kriah to haschalos, gemara to semicha. Our program provides hands-on learning, vocational training, and life-skill training.</td>
+    </tr>
+    <tr>
+      <td>Yeshiva Bonim Lamokom</td>
+      <td>425 East 9th Street  \nBrooklyn, NY  11218</td>
+      <td>Tali Abramzon</td>
+      <td>718-693-9032</td>
+      <td>bonimta@gmail.com</td>
+      <td>Boys with Down Syndrome ages 7 and up</td>
+    </tr>
+    <tr>
+      <td>Yeshiva Heichal Hatalmud</td>
+      <td>Boro Park</td>
+      <td>Rabbi Bittman</td>
+      <td>718-704-0686#1</td>
+      <td>ybittman@hhatalmud.org</td>
+      <td>Heichel Hatalmid  is a yeshiva for heimisha Mesivta boys with high functioning autism, learning disabilities, and ADHD ages 13 \nand up who are unable to succeed in a main stream yeshiva setting.</td>
+    </tr>
+    <tr>
+      <td>Yeshiva Livnas Hasapir- JCSE</td>
+      <td>8109 Bay Parkway \nBrooklyn NY</td>
+      <td>Rabbi Shlomo Roth</td>
+      <td>718-782-0064</td>
+      <td>Jcse1760@gmail.com</td>
+      <td>Students capable of academic instruction yet need small class due to Learning Disabilities, \nSpeech and Language impairment, focusing issues</td>
+    </tr>
+    <tr>
+      <td>Yesodei Bina</td>
+      <td>1051 59th Street \nBrooklyn,  NY. 11219</td>
+      <td>Mrs. Chaya Glick</td>
+      <td>347-401-2803</td>
+      <td>Cglick@yesodeibina.org</td>
+      <td>Yesodei Bina offers learning opportunities to students who cannot learn effectively in a mainstream environment but can learn  in a small individualized and differentiated setting. Our school has a strong academic component and incorporates a universal design for learning,  reflex and sensory integration, ABA, social skills training, e.t.c.  in a structured environment.</td>
+    </tr>
+    <tr>
+      <td>Bnos Peninim</td>
+      <td>1601 42nd Street, Brooklyn,  NY 11204</td>
+      <td>Shifra Mendlovic</td>
+      <td>718-713-8783</td>
+      <td><smendlovic@bpeninim.org></td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Chush Girls HS</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Gesher Preschool</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Kulanu</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Mainstream Support (Williamsburg)</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Pathways</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>PTACH</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Shema Koleinu</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Sinai/YESS</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>The Shefa School</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Tiferes Miriam</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>Yad Yisroel</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table></div><a href="index.html" class="btn btn-secondary mt-3">← Back to Home</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function searchTable(inputId, tableId) {
+    var input = document.getElementById(inputId);
+    var filter = input.value.toLowerCase();
+    var table = document.getElementById(tableId);
+    var trs = table.getElementsByTagName('tr');
+    for (var i = 1; i < trs.length; i++) {
+        var tds = trs[i].getElementsByTagName('td');
+        var show = false;
+        for (var j = 0; j < tds.length; j++) {
+            if (tds[j] && tds[j].innerText.toLowerCase().indexOf(filter) > -1) {
+                show = true;
+                break;
+            }
+        }
+        trs[i].style.display = show ? '' : 'none';
+    }
+}
+</script>
+</body>
+</html>
