@@ -1,9 +1,15 @@
-"use client"
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Users,
   GraduationCap,
@@ -105,10 +111,10 @@ import {
   Watch,
   Wifi,
   Zap,
-} from "lucide-react"
-import { Header } from "./components/header"
-import { FloatingAddButton } from "./components/floating-add-button"
-import { useToast } from "@/hooks/use-toast"
+} from "lucide-react";
+import { Header } from "./components/header";
+import { FloatingAddButton } from "./components/floating-add-button";
+import { useToast } from "@/hooks/use-toast";
 
 const iconMap = {
   // Default icons
@@ -220,256 +226,312 @@ const iconMap = {
   Watch: Watch,
   Wifi: Wifi,
   Zap: Zap,
-}
+};
 
 interface Category {
-  id: string
-  name: string
-  label: string
-  description: string
-  icon: string
-  color: string
-  count: number
+  id: string;
+  name: string;
+  label: string;
+  description: string;
+  icon: string;
+  color: string;
+  count: number;
 }
 
 export default function MainResourcePage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false)
-  const { toast } = useToast()
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+
+  // useEffect(() => {
+  //   checkAuthentication();
+  //   if (isUserAuthenticated) {
+  //     loadCategories();
+  //   }
+  // }, [isUserAuthenticated]);
 
   useEffect(() => {
-    checkAuthentication()
-    if (isUserAuthenticated) {
-      loadCategories()
-    }
-  }, [isUserAuthenticated])
-
-  const checkAuthentication = () => {
-    const userAuth = localStorage.getItem("isUserAuthenticated")
-    const userLoginTime = localStorage.getItem("userLoginTime")
-
-    if (userAuth === "true" && userLoginTime) {
-      const now = Date.now()
-      const loginTimestamp = Number.parseInt(userLoginTime)
-      const sessionDuration = 24 * 60 * 60 * 1000
-
-      if (now - loginTimestamp < sessionDuration) {
-        setIsUserAuthenticated(true)
-      } else {
-        setIsUserAuthenticated(false)
-        localStorage.removeItem("isUserAuthenticated")
-        localStorage.removeItem("userLoginTime")
-        localStorage.removeItem("currentUserId")
-        localStorage.removeItem("currentUserEmail")
-      }
-    } else {
-      setIsUserAuthenticated(false)
-    }
-    setIsLoading(false)
-  }
-
-  const loadCategories = async () => {
-    try {
-      // Load default categories with counts
-      const defaultCategories = [
-        {
-          id: "medical-supplies",
-          name: "medical-supplies",
-          label: "Medical Supplies & Resources",
-          description: "Medical supplies and equipment resources",
-          icon: "Stethoscope",
-          color: "bg-red-50 text-red-600 border-red-200",
-          count: 0,
-        },
-        {
-          id: "camps",
-          name: "camps",
-          label: "Camps",
-          description: "Summer camps and recreational programs",
-          icon: "Users",
-          color: "bg-green-50 text-green-600 border-green-200",
-          count: 0,
-        },
-        {
-          id: "schools",
-          name: "schools",
-          label: "Schools",
-          description: "Educational institutions and schools",
-          icon: "GraduationCap",
-          color: "bg-blue-50 text-blue-600 border-blue-200",
-          count: 0,
-        },
-        {
-          id: "hamaspik-programs",
-          name: "hamaspik-programs",
-          label: "Hamaspik Programs",
-          description: "Hamaspik organization programs and services",
-          icon: "Heart",
-          color: "bg-purple-50 text-purple-600 border-purple-200",
-          count: 0,
-        },
-        {
-          id: "contracted-programs",
-          name: "contracted-programs",
-          label: "Contracted Programs",
-          description: "Active contracted programs and services",
-          icon: "Building",
-          color: "bg-orange-50 text-orange-600 border-orange-200",
-          count: 0,
-        },
-        {
-          id: "perks",
-          name: "perks",
-          label: "Perks",
-          description: "Special perks and benefits available",
-          icon: "Gift",
-          color: "bg-pink-50 text-pink-600 border-pink-200",
-          count: 0,
-        },
-      ]
-
-      // Load resource counts for each category with better error handling
-      for (const category of defaultCategories) {
-        try {
-          const response = await fetch(`/api/resources?category=${category.name}`)
-
-          // Check if response is ok and content-type is JSON
-          if (response.ok) {
-            const contentType = response.headers.get("content-type")
-            if (contentType && contentType.includes("application/json")) {
-              const result = await response.json()
-              if (result.success && Array.isArray(result.data)) {
-                category.count = result.data.length
-              }
-            } else {
-              console.warn(`Non-JSON response for ${category.name}:`, await response.text())
-            }
-          } else {
-            console.warn(`Failed to load count for ${category.name}: ${response.status}`)
-          }
-        } catch (error) {
-          console.error(`Error loading count for ${category.name}:`, error)
-          // Continue with count = 0 for this category
-        }
-      }
-
-      // Load custom categories with better error handling
+    const getCategories = async () => {
       try {
-        const response = await fetch("/api/categories?includeDefault=false")
-        if (response.ok) {
-          const contentType = response.headers.get("content-type")
-          if (contentType && contentType.includes("application/json")) {
-            const result = await response.json()
-            console.log("Custom categories API response:", result)
-            if (result.success && Array.isArray(result.data)) {
-              const customCategories = result.data.map((cat: any) => ({
-                ...cat,
-                count: 0, // Will be loaded separately
-              }))
+        const res = await fetch("/api/categories");
+        const data = await res.json();
 
-              // Load counts for custom categories
-              for (const category of customCategories) {
-                try {
-                  console.log(`Loading count for custom category: ${category.name}`)
-                  const response = await fetch(`/api/resources?category=${category.name}`)
-                  if (response.ok) {
-                    const contentType = response.headers.get("content-type")
-                    if (contentType && contentType.includes("application/json")) {
-                      const result = await response.json()
-                      console.log(`Count result for ${category.name}:`, result)
-                      if (result.success && Array.isArray(result.data)) {
-                        category.count = result.data.length
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error(`Error loading count for ${category.name}:`, error)
-                }
-              }
+        if (data.success) {
+          const transformedCategories: Category[] = data.data.map(
+            (cat: any) => ({
+              id: cat.id,
+              name: cat.name,
+              label: cat.label,
+              description: cat.description,
+              icon: cat.icon,
+              color: cat.color,
+              count: cat._count.Resource,
+            })
+          );
 
-              setCategories([...defaultCategories, ...customCategories])
-            } else {
-              setCategories(defaultCategories)
-            }
-          } else {
-            console.warn("Non-JSON response from categories API")
-            setCategories(defaultCategories)
-          }
+          setCategories(transformedCategories);
         } else {
-          console.warn(`Categories API failed: ${response.status}`)
-          setCategories(defaultCategories)
+          console.error("Failed:", data.message);
         }
       } catch (error) {
-        console.error("Error loading custom categories:", error)
-        setCategories(defaultCategories)
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading categories:", error)
-      // Fallback to default categories with zero counts
-      setCategories([
-        {
-          id: "medical-supplies",
-          name: "medical-supplies",
-          label: "Medical Supplies & Resources",
-          description: "Medical supplies and equipment resources",
-          icon: "Stethoscope",
-          color: "bg-red-50 text-red-600 border-red-200",
-          count: 0,
-        },
-        {
-          id: "camps",
-          name: "camps",
-          label: "Camps",
-          description: "Summer camps and recreational programs",
-          icon: "Users",
-          color: "bg-green-50 text-green-600 border-green-200",
-          count: 0,
-        },
-        {
-          id: "schools",
-          name: "schools",
-          label: "Schools",
-          description: "Educational institutions and schools",
-          icon: "GraduationCap",
-          color: "bg-blue-50 text-blue-600 border-blue-200",
-          count: 0,
-        },
-        {
-          id: "hamaspik-programs",
-          name: "hamaspik-programs",
-          label: "Hamaspik Programs",
-          description: "Hamaspik organization programs and services",
-          icon: "Heart",
-          color: "bg-purple-50 text-purple-600 border-purple-200",
-          count: 0,
-        },
-        {
-          id: "contracted-programs",
-          name: "contracted-programs",
-          label: "Contracted Programs",
-          description: "Active contracted programs and services",
-          icon: "Building",
-          color: "bg-orange-50 text-orange-600 border-orange-200",
-          count: 0,
-        },
-        {
-          id: "perks",
-          name: "perks",
-          label: "Perks",
-          description: "Special perks and benefits available",
-          icon: "Gift",
-          color: "bg-pink-50 text-pink-600 border-pink-200",
-          count: 0,
-        },
-      ])
+    };
+
+    getCategories();
+
+    checkAuthentication();
+    if (isUserAuthenticated) {
+      getCategories();
     }
-  }
+  }, [isUserAuthenticated]);
+
+  const checkAuthentication = () => {
+    const userAuth = localStorage.getItem("isUserAuthenticated");
+    const userLoginTime = localStorage.getItem("userLoginTime");
+
+    if (userAuth === "true" && userLoginTime) {
+      const now = Date.now();
+      const loginTimestamp = Number.parseInt(userLoginTime);
+      const sessionDuration = 24 * 60 * 60 * 1000;
+
+      if (now - loginTimestamp < sessionDuration) {
+        setIsUserAuthenticated(true);
+      } else {
+        setIsUserAuthenticated(false);
+        localStorage.removeItem("isUserAuthenticated");
+        localStorage.removeItem("userLoginTime");
+        localStorage.removeItem("currentUserId");
+        localStorage.removeItem("currentUserEmail");
+      }
+    } else {
+      setIsUserAuthenticated(false);
+    }
+    setIsLoading(false);
+  };
+
+  // const loadCategories = async () => {
+  //   try {
+  //     // Load default categories with counts
+  //     const defaultCategories = [
+  //       {
+  //         id: "medical-supplies",
+  //         name: "medical-supplies",
+  //         label: "Medical Supplies & Resources",
+  //         description: "Medical supplies and equipment resources",
+  //         icon: "Stethoscope",
+  //         color: "bg-red-50 text-red-600 border-red-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "camps",
+  //         name: "camps",
+  //         label: "Camps",
+  //         description: "Summer camps and recreational programs",
+  //         icon: "Users",
+  //         color: "bg-green-50 text-green-600 border-green-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "schools",
+  //         name: "schools",
+  //         label: "Schools",
+  //         description: "Educational institutions and schools",
+  //         icon: "GraduationCap",
+  //         color: "bg-blue-50 text-blue-600 border-blue-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "hamaspik-programs",
+  //         name: "hamaspik-programs",
+  //         label: "Hamaspik Programs",
+  //         description: "Hamaspik organization programs and services",
+  //         icon: "Heart",
+  //         color: "bg-purple-50 text-purple-600 border-purple-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "contracted-programs",
+  //         name: "contracted-programs",
+  //         label: "Contracted Programs",
+  //         description: "Active contracted programs and services",
+  //         icon: "Building",
+  //         color: "bg-orange-50 text-orange-600 border-orange-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "perks",
+  //         name: "perks",
+  //         label: "Perks",
+  //         description: "Special perks and benefits available",
+  //         icon: "Gift",
+  //         color: "bg-pink-50 text-pink-600 border-pink-200",
+  //         count: 0,
+  //       },
+  //     ];
+
+  //     // Load resource counts for each category with better error handling
+  //     for (const category of defaultCategories) {
+  //       try {
+  //         const response = await fetch(
+  //           `/api/resources?category=${category.name}`
+  //         );
+
+  //         // Check if response is ok and content-type is JSON
+  //         if (response.ok) {
+  //           const contentType = response.headers.get("content-type");
+  //           if (contentType && contentType.includes("application/json")) {
+  //             const result = await response.json();
+  //             if (result.success && Array.isArray(result.data)) {
+  //               category.count = result.data.length;
+  //             }
+  //           } else {
+  //             console.warn(
+  //               `Non-JSON response for ${category.name}:`,
+  //               await response.text()
+  //             );
+  //           }
+  //         } else {
+  //           console.warn(
+  //             `Failed to load count for ${category.name}: ${response.status}`
+  //           );
+  //         }
+  //       } catch (error) {
+  //         console.error(`Error loading count for ${category.name}:`, error);
+  //         // Continue with count = 0 for this category
+  //       }
+  //     }
+
+  //     // Load custom categories with better error handling
+  //     try {
+  //       const response = await fetch("/api/categories?includeDefault=false");
+  //       if (response.ok) {
+  //         const contentType = response.headers.get("content-type");
+  //         if (contentType && contentType.includes("application/json")) {
+  //           const result = await response.json();
+  //           console.log("Custom categories API response:", result);
+  //           if (result.success && Array.isArray(result.data)) {
+  //             const customCategories = result.data.map((cat: any) => ({
+  //               ...cat,
+  //               count: 0, // Will be loaded separately
+  //             }));
+
+  //             // Load counts for custom categories
+  //             for (const category of customCategories) {
+  //               try {
+  //                 console.log(
+  //                   `Loading count for custom category: ${category.name}`
+  //                 );
+  //                 const response = await fetch(
+  //                   `/api/resources?category=${category.name}`
+  //                 );
+  //                 if (response.ok) {
+  //                   const contentType = response.headers.get("content-type");
+  //                   if (
+  //                     contentType &&
+  //                     contentType.includes("application/json")
+  //                   ) {
+  //                     const result = await response.json();
+  //                     console.log(`Count result for ${category.name}:`, result);
+  //                     if (result.success && Array.isArray(result.data)) {
+  //                       category.count = result.data.length;
+  //                     }
+  //                   }
+  //                 }
+  //               } catch (error) {
+  //                 console.error(
+  //                   `Error loading count for ${category.name}:`,
+  //                   error
+  //                 );
+  //               }
+  //             }
+
+  //             setCategories([...defaultCategories, ...customCategories]);
+  //           } else {
+  //             setCategories(defaultCategories);
+  //           }
+  //         } else {
+  //           console.warn("Non-JSON response from categories API");
+  //           setCategories(defaultCategories);
+  //         }
+  //       } else {
+  //         console.warn(`Categories API failed: ${response.status}`);
+  //         setCategories(defaultCategories);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error loading custom categories:", error);
+  //       setCategories(defaultCategories);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error loading categories:", error);
+  //     // Fallback to default categories with zero counts
+  //     setCategories([
+  //       {
+  //         id: "medical-supplies",
+  //         name: "medical-supplies",
+  //         label: "Medical Supplies & Resources",
+  //         description: "Medical supplies and equipment resources",
+  //         icon: "Stethoscope",
+  //         color: "bg-red-50 text-red-600 border-red-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "camps",
+  //         name: "camps",
+  //         label: "Camps",
+  //         description: "Summer camps and recreational programs",
+  //         icon: "Users",
+  //         color: "bg-green-50 text-green-600 border-green-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "schools",
+  //         name: "schools",
+  //         label: "Schools",
+  //         description: "Educational institutions and schools",
+  //         icon: "GraduationCap",
+  //         color: "bg-blue-50 text-blue-600 border-blue-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "hamaspik-programs",
+  //         name: "hamaspik-programs",
+  //         label: "Hamaspik Programs",
+  //         description: "Hamaspik organization programs and services",
+  //         icon: "Heart",
+  //         color: "bg-purple-50 text-purple-600 border-purple-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "contracted-programs",
+  //         name: "contracted-programs",
+  //         label: "Contracted Programs",
+  //         description: "Active contracted programs and services",
+  //         icon: "Building",
+  //         color: "bg-orange-50 text-orange-600 border-orange-200",
+  //         count: 0,
+  //       },
+  //       {
+  //         id: "perks",
+  //         name: "perks",
+  //         label: "Perks",
+  //         description: "Special perks and benefits available",
+  //         icon: "Gift",
+  //         color: "bg-pink-50 text-pink-600 border-pink-200",
+  //         count: 0,
+  //       },
+  //     ]);
+  //   }
+  // };
 
   const filteredCategories = categories.filter((category) =>
-    category.label.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+    category.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -479,14 +541,15 @@ export default function MainResourcePage() {
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!isUserAuthenticated) {
     // Redirect to auth page
     if (typeof window !== "undefined") {
-      window.location.href = "/auth"
+      window.location.href = "/auth";
     }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
@@ -494,7 +557,7 @@ export default function MainResourcePage() {
           <p className="text-gray-600">Redirecting to login...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -504,11 +567,16 @@ export default function MainResourcePage() {
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Resource Guide</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Resource Guide
+          </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             A comprehensive guide to resources, programs, and services
           </p>
-          <p className="text-gray-500 mb-8">Browse by category or search within each section to find what you need</p>
+          <p className="text-gray-500 mb-8">
+            Browse by category or search within each section to find what you
+            need
+          </p>
 
           {/* Search Bar */}
           <div className="max-w-md mx-auto relative">
@@ -526,29 +594,42 @@ export default function MainResourcePage() {
         {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {filteredCategories.map((category) => {
-            const IconComponent = iconMap[category.icon as keyof typeof iconMap] || Users
+            const IconComponent =
+              iconMap[category.icon as keyof typeof iconMap] || Users;
 
             return (
-              <Card key={category.id} className="h-full hover:shadow-lg transition-all duration-200 border">
+              <Card
+                key={category.id}
+                className="h-full hover:shadow-lg transition-all duration-200 border"
+              >
                 <CardHeader className="text-center pb-4">
                   <div
                     className={`w-12 h-12 rounded-lg ${category.color} flex items-center justify-center mb-3 mx-auto`}
                   >
                     <IconComponent className="w-6 h-6" />
                   </div>
-                  <CardTitle className="text-xl font-semibold text-gray-900">{category.label}</CardTitle>
-                  <p className="text-gray-600 text-sm">{category.description}</p>
+                  <CardTitle className="text-xl font-semibold text-gray-900">
+                    {category.label}
+                  </CardTitle>
+                  <p className="text-gray-600 text-sm">
+                    {category.description}
+                  </p>
                 </CardHeader>
                 <CardContent className="pt-0 pb-4">
-                  <p className="text-center text-sm font-medium text-gray-700">{category.count} resources available</p>
+                  <p className="text-center text-sm font-medium text-gray-700">
+                    {category.count} resources available
+                  </p>
                 </CardContent>
                 <CardFooter className="pt-0">
-                  <Button asChild className="w-full bg-gray-900 hover:bg-gray-800 text-white">
-                    <Link href={`/${category.name}`}>View Resources</Link>
+                  <Button
+                    asChild
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                  >
+                    <Link href={`/${category.id}`}>View Resources</Link>
                   </Button>
                 </CardFooter>
               </Card>
-            )
+            );
           })}
         </div>
       </div>
@@ -561,12 +642,18 @@ export default function MainResourcePage() {
           <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-6">
             {/* Logo and Company Info */}
             <div className="flex flex-col md:flex-row items-center gap-4">
-              <img src="/images/hamaspik-logo.png" alt="Hamaspik of Kings County Logo" className="w-16 h-16" />
+              <img
+                src="/images/hamaspik-logo.png"
+                alt="Hamaspik of Kings County Logo"
+                className="w-16 h-16"
+              />
               <div className="text-center md:text-left">
-                <h3 className="text-lg font-semibold text-gray-900">Hamaspik of Kings County</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Hamaspik of Kings County
+                </h3>
                 <p className="text-sm text-gray-600 max-w-md">
-                  Providing services, support, and hope to people going through challenges so they can lead a
-                  fulfilling, productive life.
+                  Providing services, support, and hope to people going through
+                  challenges so they can lead a fulfilling, productive life.
                 </p>
               </div>
             </div>
@@ -580,7 +667,12 @@ export default function MainResourcePage() {
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
               >
                 Visit Our Website
-                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="ml-2 w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -589,11 +681,13 @@ export default function MainResourcePage() {
                   />
                 </svg>
               </a>
-              <p className="text-xs text-gray-500">© 2024 Hamaspik of Kings County</p>
+              <p className="text-xs text-gray-500">
+                © 2024 Hamaspik of Kings County
+              </p>
             </div>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }

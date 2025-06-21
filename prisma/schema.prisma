@@ -9,14 +9,118 @@ datasource db {
 }
 
 model User {
-    id           String  @id @default(uuid())
-    password     String
-    email        String  @unique
-    verifiedUser Boolean
-    studentId    String?
-    facultyId    String?
-    adminId      String?
-    superAdminId String?
+    id               String             @id @default(uuid())
+    password         String
+    email            String             @unique
+    isActive         Boolean            @default(false)
+    isAdmin          Boolean            @default(false)
+    lastLogin        DateTime?          @default(now())
+    createdAt        DateTime           @default(now())
+    updatedAt        DateTime           @updatedAt
+    ResourceFeedback ResourceFeedback[]
 
     @@map("users")
+}
+
+model Category {
+    id             String          @id @default(uuid())
+    name           String          @unique
+    label          String          @unique
+    description    String
+    icon           String
+    color          String
+    isDefault      Boolean         @default(false)
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt
+    categoryFields CategoryField[]
+    Resource       Resource[]
+
+    @@map("categories")
+}
+
+model CategoryField {
+    id         String    @id @default(uuid())
+    name       String
+    label      String
+    type       FieldType
+    required   Boolean   @default(false)
+    options    String[]  @default([])
+    categoryId String
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+    category Category @relation(fields: [categoryId], references: [id])
+
+    @@map("category_fields")
+}
+
+model Resource {
+    id               String             @id @default(uuid())
+    categoryId       String
+    status           ResourceStatus     @default(pending)
+    adminNote        String?
+    createdAt        DateTime           @default(now())
+    updatedAt        DateTime           @updatedAt
+    category         Category           @relation(fields: [categoryId], references: [id])
+    ResourceField    ResourceField[]
+    ResourceFeedback ResourceFeedback[]
+
+    @@map("resources")
+}
+
+model ResourceFeedback {
+    id         String         @id @default(uuid())
+    resourceId String
+    userId     String
+    comment    String
+    status     FeedbackStatus @default(PENDING)
+    createdAt  DateTime       @default(now())
+    updatedAt  DateTime       @updatedAt
+
+    resource Resource @relation(fields: [resourceId], references: [id])
+    user     User     @relation(fields: [userId], references: [id])
+
+    @@map("resource_feedback")
+}
+
+model ResourceField {
+    id         String @id @default(uuid())
+    resourceId String
+    fieldId    String
+    name       String
+    value      String
+
+    resource Resource @relation(fields: [resourceId], references: [id])
+
+    @@map("resource_fields")
+}
+
+model ApprovedEmail {
+    id        String   @id @default(uuid())
+    email     String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("approved_emails")
+}
+
+enum ResourceStatus {
+    pending
+    approve
+    reject
+}
+
+enum FieldType {
+    TEXT
+    EMAIL
+    PHONE
+    TEXTAREA
+    SELECT
+    NUMBER
+}
+
+enum FeedbackStatus {
+    PENDING
+    REVIEWED
+    RESOLVED
 }

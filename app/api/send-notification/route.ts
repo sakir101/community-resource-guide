@@ -1,20 +1,19 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { EmailNotificationService } from "@/app/lib/email-service"
+import { NextRequest, NextResponse } from "next/server"
+import { PrismaClient } from "@prisma/client";
+import { EmailNotificationService } from "@/app/lib/email-service";
+
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { type, email, data } = body
 
-    console.log("Notification request received:", { type, email, data })
+    console.log("📩 Notification request received:", { type, email, data })
 
     if (!email) {
-      console.error("No email address provided for notification")
       return NextResponse.json(
-        {
-          success: false,
-          message: "No email address provided",
-        },
+        { success: false, message: "Email is required" },
         { status: 400 },
       )
     }
@@ -23,69 +22,79 @@ export async function POST(request: NextRequest) {
     let message = ""
 
     switch (type) {
-      case "resource_submitted":
-        console.log("Sending resource submitted notification")
-        success = await EmailNotificationService.sendResourceSubmittedNotification(
-          email,
-          data.category,
-          data.resourceName,
-        )
+      case "resource_submitted": {
+        const resource = await prisma.resource.findUnique({
+          where: { id: data.resourceId },
+          include: {
+            category: true,
+            ResourceField: true,
+          },
+        })
+
+        if (!resource) {
+          return NextResponse.json({ success: false, message: "Resource not found" }, { status: 404 })
+        }
+
+        const resourceName =
+          resource.ResourceField.find((f) =>
+            ["name", "campName", "title", "program", "resource"].includes(f.name),
+          )?.value || "Unnamed Resource"
+
+        success = await EmailNotificationService.sendNewResourceNotification({
+          id: resource.id,
+          category: resource.category.label,
+          data: Object.fromEntries(resource.ResourceField.map((f) => [f.name, f.value])),
+          submittedAt: resource.createdAt.toISOString(),
+        })
+
         message = "Resource submission notification sent"
         break
+      }
 
-      case "resource_added":
-        console.log("Sending resource added notification")
-        success = await EmailNotificationService.sendResourceAddedNotification(
-          email,
-          data.category,
-          data.resourceName,
-          data.addedBy || "Admin",
-        )
-        message = "Resource added notification sent"
-        break
+      case "feedback_submitted": {
+        const feedback = await prisma.resourceFeedback.findUnique({
+          where: { id: data.feedbackId },
+          include: {
+            resource: {
+              include: {
+                category: true,
+              },
+            },
+          },
+        })
 
-      case "feedback_submitted":
-        console.log("Sending feedback submitted notification")
-        success = await EmailNotificationService.sendFeedbackSubmittedNotification(
-          email,
-          data.category,
-          data.resourceName,
-          data.feedback,
-        )
+        if (!feedback || !feedback.resource) {
+          return NextResponse.json({ success: false, message: "Feedback or resource not found" }, { status: 404 })
+        }
+
+        success = await EmailNotificationService.sendFeedbackNotification({
+          id: feedback.id,
+          category: feedback.resource.category.label,
+          resourceName: data.resourceName || "Unknown Resource",
+          feedback: feedback.comment,
+          submittedAt: feedback.createdAt.toISOString(),
+        })
+
         message = "Feedback notification sent"
         break
+      }
 
-      case "test":
-        console.log("Sending test email")
+      case "test": {
         success = await EmailNotificationService.sendTestEmail(email)
         message = "Test email sent"
         break
+      }
 
       default:
-        console.error("Unknown notification type:", type)
         return NextResponse.json(
-          {
-            success: false,
-            message: "Unknown notification type",
-          },
+          { success: false, message: "Unknown notification type" },
           { status: 400 },
         )
     }
 
-    console.log("Email notification result:", { success, message })
-
-    return NextResponse.json({
-      success,
-      message,
-    })
+    return NextResponse.json({ success, message })
   } catch (error) {
-    console.error("Error sending notification:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to send notification",
-      },
-      { status: 500 },
-    )
+    console.error("❌ Notification API error:", error)
+    return NextResponse.json({ success: false, message: "Failed to send notification" }, { status: 500 })
   }
 }

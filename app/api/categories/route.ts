@@ -1,147 +1,59 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCustomCategories, addCustomCategory, updateCustomCategory, deleteCustomCategory } from "../../lib/database"
+import { PrismaClient } from "@prisma/client";
 
-export async function GET(request: NextRequest) {
+const prisma = new PrismaClient();
+
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const includeDefault = searchParams.get("includeDefault") === "true"
-
-    const customCategories = await getCustomCategories()
-
-    if (includeDefault) {
-      // Return both default and custom categories
-      const defaultCategories = [
-        {
-          id: "camps",
-          name: "camps",
-          label: "Camps",
-          description: "Summer camps and recreational programs",
-          icon: "Users",
-          color: "bg-green-50 text-green-600 border-green-200",
-          isDefault: true,
-          fields: [
-            { name: "campName", label: "Camp Name", type: "text", required: true },
-            { name: "contactPerson", label: "Contact Person", type: "text", required: true },
-            { name: "phone", label: "Phone", type: "text", required: true },
-            { name: "email", label: "Email", type: "email" },
-            { name: "underAuspicesOf", label: "Under Auspices Of", type: "text" },
-            { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both", "mixed"] },
-            { name: "ages", label: "Ages", type: "text" },
-            { name: "description", label: "Description", type: "textarea" },
-            { name: "location", label: "Location", type: "text" },
-            { name: "integrated", label: "Integration Type", type: "text" },
-            { name: "medicalNeeds", label: "Medical Needs", type: "text" },
-            { name: "tuition", label: "Tuition", type: "text" },
-            { name: "comments", label: "Comments", type: "textarea" },
-          ],
+    const categories = await prisma.category.findMany({
+      include: {
+        categoryFields: true,
+        _count: {
+          select: {
+            Resource: true,
+          },
         },
-        {
-          id: "schools",
-          name: "schools",
-          label: "Schools",
-          description: "Educational institutions and schools",
-          icon: "GraduationCap",
-          color: "bg-blue-50 text-blue-600 border-blue-200",
-          isDefault: true,
-          fields: [
-            { name: "name", label: "School Name", type: "text", required: true },
-            { name: "location", label: "Location", type: "text", required: true },
-            { name: "contactPerson", label: "Contact Person", type: "text", required: true },
-            { name: "phone", label: "Phone", type: "text", required: true },
-            { name: "email", label: "Email", type: "email" },
-            { name: "studentsServed", label: "Students Served", type: "textarea" },
-          ],
-        },
-        {
-          id: "medical-supplies",
-          name: "medical-supplies",
-          label: "Medical Supplies",
-          description: "Medical supplies and equipment resources",
-          icon: "Stethoscope",
-          color: "bg-red-50 text-red-600 border-red-200",
-          isDefault: true,
-          fields: [
-            { name: "resource", label: "Resource Name", type: "text", required: true },
-            { name: "contact", label: "Contact Info", type: "text", required: true },
-            { name: "email", label: "Email", type: "email" },
-            { name: "notes", label: "Notes", type: "textarea" },
-            { name: "moreItems", label: "Additional Items", type: "textarea" },
-          ],
-        },
-        {
-          id: "hamaspik-programs",
-          name: "hamaspik-programs",
-          label: "Hamaspik Programs",
-          description: "Hamaspik organization programs and services",
-          icon: "Heart",
-          color: "bg-purple-50 text-purple-600 border-purple-200",
-          isDefault: true,
-          fields: [
-            { name: "program", label: "Program Name", type: "text", required: true },
-            { name: "gender", label: "Gender", type: "select", options: ["Male", "Female", "Both"] },
-            { name: "functioningLevel", label: "Functioning Level", type: "text" },
-            { name: "location", label: "Location", type: "text" },
-            { name: "daysOpen", label: "Days Open", type: "text" },
-            { name: "contact", label: "Contact", type: "text" },
-            { name: "runBy", label: "Run By", type: "text" },
-          ],
-        },
-        {
-          id: "contracted-programs",
-          name: "contracted-programs",
-          label: "Contracted Programs",
-          description: "Active contracted programs and services",
-          icon: "Building",
-          color: "bg-orange-50 text-orange-600 border-orange-200",
-          isDefault: true,
-          fields: [
-            { name: "name", label: "Program Name", type: "text", required: true },
-            { name: "programType", label: "Program Type", type: "text" },
-            { name: "location", label: "Location", type: "text" },
-            { name: "phone", label: "Phone", type: "text" },
-            { name: "email", label: "Email", type: "email" },
-            { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both"] },
-            { name: "ages", label: "Ages", type: "text" },
-            { name: "whoItsFor", label: "Who It's For", type: "textarea" },
-            { name: "description", label: "Description", type: "textarea" },
-            { name: "toSignUp", label: "How to Sign Up", type: "text" },
-          ],
-        },
-        {
-          id: "perks",
-          name: "perks",
-          label: "Perks",
-          description: "Special perks and benefits available",
-          icon: "Gift",
-          color: "bg-pink-50 text-pink-600 border-pink-200",
-          isDefault: true,
-          fields: [
-            { name: "title", label: "Perk Title", type: "text", required: true },
-            { name: "description", label: "Description", type: "textarea", required: true },
-            { name: "details", label: "Details", type: "textarea" },
-          ],
-        },
-      ]
-
-      return NextResponse.json({
-        success: true,
-        data: [...defaultCategories, ...customCategories.map((cat) => ({ ...cat, isDefault: false }))],
-      })
-    } else {
-      // Return only custom categories
-      return NextResponse.json({
-        success: true,
-        data: customCategories,
-      })
-    }
-  } catch (error) {
-    console.error("Error fetching categories:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to fetch categories",
       },
-      { status: 500 },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    return NextResponse.json({ success: true, data: categories })
+  } catch (error) {
+    console.error("❌ Failed to fetch categories:", error)
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch categories" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GETSingle(req: Request, { params }: { params: { id: string } }) {
+  const { id } = params
+
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id },
+      include: {
+        categoryFields: true,
+      },
+    })
+
+    if (!category) {
+      return NextResponse.json(
+        { success: false, message: "Category not found" },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ success: true, data: category })
+  } catch (error) {
+    console.error("❌ Failed to fetch category:", error)
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch category" },
+      { status: 500 }
     )
   }
 }
@@ -155,77 +67,215 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case "create": {
-        const { category } = body
-        console.log("🚀 Creating category:", category)
+        const { name, label, description, icon, color, categoryFields } = body;
+        console.log(body);
 
         const categoryToSave = {
-          ...category,
-          icon: category.icon || "Folder",
-          color: category.color || "bg-gray-50 text-gray-600 border-gray-200",
-        }
+          name,
+          label,
+          description,
+          icon,
+          color,
+        };
 
-        console.log("💾 Category data to save:", categoryToSave)
+        try {
+          const result = await prisma.$transaction(async (tx) => {
+            // 1. Create Category
+            const newCategory = await tx.category.create({
+              data: categoryToSave,
+            });
 
-        const newCategory = await addCustomCategory(categoryToSave)
+            // 2. Prepare & Create CategoryFields
+            if (categoryFields && Array.isArray(categoryFields) && categoryFields.length > 0) {
+              const fieldsToCreate = categoryFields.map((field: any) => {
+                const baseField = {
+                  name: field.name,
+                  label: field.label,
+                  type: field.type,
+                  required: field.required ?? false,
+                  categoryId: newCategory.id,
+                };
 
-        if (newCategory) {
-          console.log("✅ Category created:", newCategory)
+                // Include options only if it's a valid array
+                if (Array.isArray(field.options) && field.options.length > 0) {
+                  return {
+                    ...baseField,
+                    options: field.options,
+                  };
+                }
+
+                return baseField;
+              });
+
+              await tx.categoryField.createMany({
+                data: fieldsToCreate,
+              });
+            }
+
+            // 3. Fetch category with fields
+            const categoryWithFields = await tx.category.findUnique({
+              where: { id: newCategory.id },
+              include: { categoryFields: true },
+            });
+
+            return categoryWithFields;
+          });
+
+          console.log("✅ Category created with fields:", result);
+
           return NextResponse.json({
             success: true,
-            data: newCategory,
+            data: result,
             message: "Category created successfully",
-          })
-        } else {
+          });
+
+        } catch (error) {
+          console.error("❌ Error in transaction:", error);
           return NextResponse.json(
             {
               success: false,
               message: "Failed to create category",
+              error: error instanceof Error ? error.message : String(error),
             },
-            { status: 500 },
-          )
+            { status: 500 }
+          );
         }
       }
 
       case "update": {
-        const { categoryId, categoryData } = body
-        console.log("✏️ Updating category:", categoryId, categoryData)
+        const { categoryId, categoryData } = body;
 
-        const updatedCategory = await updateCustomCategory(categoryId, categoryData)
-        if (updatedCategory) {
+        if (!categoryId || !categoryData) {
+          return NextResponse.json(
+            { success: false, message: "Missing categoryId or categoryData" },
+            { status: 400 }
+          );
+        }
+
+        const { name, label, description, icon, color, fields } = categoryData;
+
+        try {
+          const updatedCategory = await prisma.$transaction(async (tx) => {
+            // 1. Update Category Info
+            const category = await tx.category.update({
+              where: { id: categoryId },
+              data: {
+                name,
+                label,
+                description,
+                icon,
+                color,
+              },
+            });
+
+            // 2. Delete existing fields
+            await tx.categoryField.deleteMany({
+              where: { categoryId },
+            });
+
+            // 3. Insert updated fields
+            if (fields && Array.isArray(fields) && fields.length > 0) {
+              const fieldsToCreate = fields.map((field: any) => {
+                const baseField = {
+                  name: field.name,
+                  label: field.label,
+                  type: field.type,
+                  required: field.required ?? false,
+                  categoryId,
+                };
+
+                if (Array.isArray(field.options) && field.options.length > 0) {
+                  return {
+                    ...baseField,
+                    options: field.options,
+                  };
+                }
+
+                return baseField;
+              });
+
+              await tx.categoryField.createMany({
+                data: fieldsToCreate,
+              });
+            }
+
+            // 4. Return updated category with fields
+            return tx.category.findUnique({
+              where: { id: categoryId },
+              include: { categoryFields: true },
+            });
+          });
+
           return NextResponse.json({
             success: true,
             data: updatedCategory,
             message: "Category updated successfully",
-          })
-        } else {
+          });
+        } catch (error) {
+          console.error("❌ Error updating category:", error);
           return NextResponse.json(
             {
               success: false,
-              message: "Category not found",
+              message: "Failed to update category",
+              error: error instanceof Error ? error.message : String(error),
             },
-            { status: 404 },
-          )
+            { status: 500 }
+          );
         }
       }
 
       case "delete": {
-        const { categoryId } = body
-        console.log("🗑️ Deleting category:", categoryId)
+        const { categoryId } = body;
 
-        const success = await deleteCustomCategory(categoryId)
-        if (success) {
-          return NextResponse.json({
-            success: true,
-            message: "Category deleted successfully",
-          })
-        } else {
+        if (!categoryId) {
           return NextResponse.json(
             {
               success: false,
-              message: "Category not found",
+              message: "Missing categoryId",
             },
-            { status: 404 },
-          )
+            { status: 400 }
+          );
+        }
+
+        try {
+          const deleted = await prisma.$transaction(async (tx) => {
+            // 1. Check if category exists
+            const existingCategory = await tx.category.findUnique({
+              where: { id: categoryId },
+            });
+
+            if (!existingCategory) {
+              throw new Error("Category not found");
+            }
+
+            // 2. Delete related category fields
+            await tx.categoryField.deleteMany({
+              where: { categoryId },
+            });
+
+            // 3. Delete the category itself
+            await tx.category.delete({
+              where: { id: categoryId },
+            });
+
+            return true;
+          });
+
+          if (deleted) {
+            return NextResponse.json({
+              success: true,
+              message: "Category deleted successfully",
+            });
+          }
+        } catch (error) {
+          console.error("❌ Error deleting category:", error);
+          return NextResponse.json(
+            {
+              success: false,
+              message: error instanceof Error ? error.message : "Failed to delete category",
+            },
+            { status: 500 }
+          );
         }
       }
 

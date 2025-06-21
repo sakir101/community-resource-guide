@@ -1,148 +1,156 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, UserPlus, LogIn } from "lucide-react"
-import { createUser, authenticateUser, validatePassword } from "@/app/lib/user-storage"
-import { isEmailApproved } from "@/app/lib/approved-emails"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
+import {
+  createUser,
+  authenticateUser,
+  validatePassword,
+} from "@/app/lib/user-storage";
+import { isEmailApproved } from "@/app/lib/approved-emails";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [errors, setErrors] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check if user is already authenticated
-    const userAuth = localStorage.getItem("isUserAuthenticated")
-    const userLoginTime = localStorage.getItem("userLoginTime")
+    const userAuth = localStorage.getItem("isUserAuthenticated");
+    const userLoginTime = localStorage.getItem("userLoginTime");
 
     if (userAuth === "true" && userLoginTime) {
-      const now = Date.now()
-      const loginTimestamp = Number.parseInt(userLoginTime)
-      const sessionDuration = 24 * 60 * 60 * 1000
+      const now = Date.now();
+      const loginTimestamp = Number.parseInt(userLoginTime);
+      const sessionDuration = 24 * 60 * 60 * 1000;
 
       if (now - loginTimestamp < sessionDuration) {
-        window.location.href = "/"
-        return
+        window.location.href = "/";
+        return;
       }
     }
-  }, [])
+  }, []);
 
   const validateForm = () => {
-    const newErrors: string[] = []
+    const newErrors: string[] = [];
 
     if (!email) {
-      newErrors.push("Email is required")
+      newErrors.push("Email is required");
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.push("Please enter a valid email address")
+      newErrors.push("Please enter a valid email address");
     }
 
     if (!password) {
-      newErrors.push("Password is required")
+      newErrors.push("Password is required");
     }
 
     if (!isLogin) {
       // Check if email is in the approved list
-      if (!isEmailApproved(email)) {
-        newErrors.push("This email is not authorized to create an account")
-      }
+      // if (!isEmailApproved(email)) {
+      //   newErrors.push("This email is not authorized to create an account");
+      // }
 
       if (!confirmPassword) {
-        newErrors.push("Please confirm your password")
+        newErrors.push("Please confirm your password");
       } else if (password !== confirmPassword) {
-        newErrors.push("Passwords do not match")
+        newErrors.push("Passwords do not match");
       }
 
-      const passwordValidation = validatePassword(password)
+      const passwordValidation = validatePassword(password);
       if (!passwordValidation.isValid) {
-        newErrors.push(...passwordValidation.errors)
+        newErrors.push(...passwordValidation.errors);
       }
     }
 
-    setErrors(newErrors)
-    return newErrors.length === 0
-  }
+    setErrors(newErrors);
+    return newErrors.length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     if (!validateForm()) {
-      setIsLoading(false)
-      return
+      setIsLoading(false);
+      return;
     }
 
     try {
       if (isLogin) {
-        // Handle login
-        const result = authenticateUser(email, password)
+        const result = await authenticateUser(email, password);
 
         if (result.success && result.user) {
-          localStorage.setItem("isUserAuthenticated", "true")
-          localStorage.setItem("userLoginTime", Date.now().toString())
-          localStorage.setItem("currentUserId", result.user.id)
-          localStorage.setItem("currentUserEmail", result.user.email)
+          localStorage.setItem("isUserAuthenticated", "true");
+          localStorage.setItem("userLoginTime", Date.now().toString());
+          localStorage.setItem("currentUserId", result.user.id);
+          localStorage.setItem("currentUserEmail", result.user.email);
 
           toast({
             title: "Login Successful!",
             description: "Welcome back to the Resource Guide.",
-          })
+          });
 
-          window.location.href = "/"
+          window.location.href = "/";
         } else {
-          setErrors([result.message])
+          setErrors([result.message]);
         }
       } else {
         // Handle signup
-        const result = createUser(email, password)
+        const result = await createUser(email, password);
 
         if (result.success && result.user) {
-          localStorage.setItem("isUserAuthenticated", "true")
-          localStorage.setItem("userLoginTime", Date.now().toString())
-          localStorage.setItem("currentUserId", result.user.id)
-          localStorage.setItem("currentUserEmail", result.user.email)
+          localStorage.setItem("isUserAuthenticated", "true");
+          localStorage.setItem("userLoginTime", Date.now().toString());
+          localStorage.setItem("currentUserId", result.user.id);
 
           toast({
             title: "Account Created!",
             description: "Welcome to the Resource Guide.",
-          })
+          });
 
-          window.location.href = "/"
+          window.location.href = "/";
         } else {
-          setErrors([result.message])
+          setErrors([result.message]);
         }
       }
     } catch (error) {
-      setErrors(["An unexpected error occurred. Please try again."])
+      setErrors(["An unexpected error occurred. Please try again."]);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            {isLogin ? <LogIn className="w-8 h-8 text-blue-600" /> : <UserPlus className="w-8 h-8 text-blue-600" />}
+            {isLogin ? (
+              <LogIn className="w-8 h-8 text-blue-600" />
+            ) : (
+              <UserPlus className="w-8 h-8 text-blue-600" />
+            )}
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
             {isLogin ? "Welcome Back" : "Create Account"}
           </CardTitle>
           <p className="text-gray-600">
-            {isLogin ? "Sign in to access the Resource Guide" : "Join the Resource Guide community"}
+            {isLogin
+              ? "Sign in to access the Resource Guide"
+              : "Join the Resource Guide community"}
           </p>
         </CardHeader>
         <CardContent>
@@ -184,7 +192,11 @@ export default function AuthPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -207,7 +219,11 @@ export default function AuthPage() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -226,7 +242,11 @@ export default function AuthPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+              {isLoading
+                ? "Please wait..."
+                : isLogin
+                ? "Sign In"
+                : "Create Account"}
             </Button>
           </form>
 
@@ -234,19 +254,21 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => {
-                setIsLogin(!isLogin)
-                setErrors([])
-                setEmail("")
-                setPassword("")
-                setConfirmPassword("")
+                setIsLogin(!isLogin);
+                setErrors([]);
+                setEmail("");
+                setPassword("");
+                setConfirmPassword("");
               }}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              {isLogin
+                ? "Don't have an account? Sign up"
+                : "Already have an account? Sign in"}
             </button>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

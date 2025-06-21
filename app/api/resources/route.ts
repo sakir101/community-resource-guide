@@ -1,27 +1,47 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getResourceData, addResource, updateResource, deleteResource, initializeDefaultData } from "@/app/lib/database"
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const category = searchParams.get("category")
+    const { searchParams } = new URL(request.url);
+    const categoryId = searchParams.get("category");
 
-    if (!category) {
-      return NextResponse.json({ success: false, message: "Category parameter is required" }, { status: 400 })
+    if (!categoryId) {
+      return NextResponse.json(
+        { success: false, message: "categoryId parameter is required" },
+        { status: 400 }
+      );
     }
 
-    // Initialize default data if this is the first request
-    await initializeDefaultData()
+    // Optional: Initialize default data
+    await initializeDefaultData();
 
-    const data = await getResourceData(category)
-    console.log(`📊 API: Returning ${data.length} items for category "${category}"`)
+    // Fetch resources directly using Prisma
+    const data = await prisma.resource.findMany({
+      where: { categoryId },
+      include: {
+        ResourceField: true,
+        category: true, // Optional: if you want to include category info
+      },
+    });
 
-    return NextResponse.json({ success: true, data })
+    console.log(`📊 API: Returning ${data.length} items for category ID "${categoryId}"`);
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Failed to fetch resources:", error)
-    return NextResponse.json({ success: false, message: "Failed to fetch resources", data: [] }, { status: 500 })
+    console.error("❌ Failed to fetch resources:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch resources", data: [] },
+      { status: 500 }
+    );
   }
 }
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,30 +52,117 @@ export async function POST(request: NextRequest) {
     console.log(`📝 API: Data received:`, data)
 
     if (action === "add") {
-      const success = await addResource(category, data)
-      if (success) {
-        console.log("✅ API: Resource added successfully")
-        return NextResponse.json({ success: true, message: "Resource added successfully!" })
-      } else {
-        return NextResponse.json({ success: false, message: "Failed to add resource" }, { status: 500 })
+      try {
+        const result = await prisma.$transaction(async (tx) => {
+          // 1. Create the Resource
+          const newResource = await tx.resource.create({
+            data: {
+              categoryId: category,
+            },
+          });
+
+          // 2. Create ResourceField[] associated with the Resource
+          const resourceFields = data.map((field: any) => ({
+            resourceId: newResource.id,
+            fieldId: field.id,
+            name: field.name,
+            value: field.value,
+          }));
+
+          await tx.resourceField.createMany({
+            data: resourceFields,
+          });
+
+          return newResource;
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: result,
+          message: "Resource added successfully",
+        });
+      } catch (error) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Failed to add resource",
+            error: error instanceof Error ? error.message : String(error),
+          },
+          { status: 500 }
+        );
       }
     } else if (action === "update") {
-      console.log(`📝 API: Updating resource at index ${index}`)
-      const success = await updateResource(category, index, data)
-      if (success) {
-        console.log("✅ API: Resource updated successfully")
-        return NextResponse.json({ success: true, message: "Resource updated successfully!" })
-      } else {
-        console.log("❌ API: Resource not found for update")
-        return NextResponse.json({ success: false, message: "Resource not found" }, { status: 404 })
+      try {
+        const result = await prisma.$transaction(async (tx) => {
+
+          // Step 2: Delete existing ResourceField entries
+          await tx.resourceField.deleteMany({
+            where: {
+              resourceId: data.resourceId,
+            },
+          });
+
+          // Step 3: Re-insert updated ResourceField entries
+          const resourceFields = data.fields.map((field: any) => ({
+            resourceId: data.resourceId,
+            fieldId: field.id,
+            name: field.name,
+            value: field.value,
+          }));
+
+          await tx.resourceField.createMany({
+            data: resourceFields,
+          });
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: result,
+          message: "Resource field updated successfully",
+        });
+      } catch (error) {
+        console.error("❌ Error updating resource:", error);
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Failed to update resource",
+            error: error instanceof Error ? error.message : String(error),
+          },
+          { status: 500 }
+        );
       }
     } else if (action === "delete") {
-      const success = await deleteResource(category, index)
-      if (success) {
-        console.log("✅ API: Resource deleted successfully")
-        return NextResponse.json({ success: true, message: "Resource deleted successfully!" })
-      } else {
-        return NextResponse.json({ success: false, message: "Resource not found" }, { status: 404 })
+      try {
+        await prisma.$transaction([
+          // Delete related ResourceField entries
+          prisma.resourceField.deleteMany({
+            where: {
+              resourceId: category,
+            },
+          }),
+
+          // Delete the Resource
+          prisma.resource.delete({
+            where: {
+              id: category,
+            },
+          }),
+        ]);
+
+        return NextResponse.json({
+          success: true,
+          message: "Resource deleted successfully",
+        });
+      } catch (error) {
+        console.error("Delete transaction failed:", error);
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Failed to update resource",
+            error: error instanceof Error ? error.message : String(error),
+          },
+          { status: 500 }
+        );
       }
     }
 
@@ -65,3 +172,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: "Failed to process request" }, { status: 500 })
   }
 }
+
+// export async function FeedbackPOST(request: NextRequest) {
+//   try {
+//     const body = await request.json();
+//     const { resourceId, userId, comment } = body;
+
+//     // Validate required fields
+//     if (!resourceId || !userId || typeof rating !== "number") {
+//       return NextResponse.json(
+//         {
+//           success: false,
+//           message: "Missing required fields: resourceId, userId, or rating.",
+//         },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Create the feedback
+//     const feedback = await prisma.resourceFeedback.create({
+//       data: {
+//         resourceId,
+//         userId,
+//         comment,
+//       },
+//     });
+
+//     return NextResponse.json({
+//       success: true,
+//       message: "Feedback submitted successfully",
+//       data: feedback,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error submitting feedback:", error);
+//     return NextResponse.json(
+//       {
+//         success: false,
+//         message: "Failed to submit feedback",
+//         error: error instanceof Error ? error.message : String(error),
+//       },
+//       { status: 500 }
+//     );
+//   }
+// }

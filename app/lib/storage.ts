@@ -19,9 +19,10 @@ export interface PendingResource {
 }
 
 export interface CategoryField {
+  id: string
   name: string
   label: string
-  type: "text" | "email" | "textarea" | "select" | "number" | "tel"
+  type: "TEXT" | "EMAIL" | "TEXTAREA" | "SELECT" | "NUMBER" | "PHONE"
   required: boolean
   options?: string[]
 }
@@ -34,6 +35,7 @@ export interface CategoryDefinition {
   icon: string
   color: string
   fields: CategoryField[]
+  isDefault?: boolean
   createdAt: string
 }
 

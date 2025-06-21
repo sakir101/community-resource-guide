@@ -41,8 +41,8 @@ Please review this submission in the admin panel.
 
 Resource Details:
 ${Object.entries(resourceData.data)
-  .map(([key, value]) => `${key}: ${value}`)
-  .join("\n")}
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n")}
       `
 
       return await this.sendEmail(settings.adminEmail, subject, message)
@@ -120,7 +120,7 @@ Test successful! ✅
 
       // For now, we'll use a free Web3Forms key for testing
       // You can get your own free key at https://web3forms.com
-      const accessKey = "c9e1f7e4-8b2a-4f3d-9c5e-1a2b3c4d5e6f" // This is a demo key
+      const accessKey = "212445ad-8038-4130-bf22-3db034d7013a" // This is a demo key
 
       console.log("📧 Sending email to:", email)
       console.log("📧 Subject:", subject)

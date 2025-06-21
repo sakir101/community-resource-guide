@@ -1,24 +1,54 @@
 import { type NextRequest, NextResponse } from "next/server"
 import {
-  getPendingResources,
   addPendingResource,
   approvePendingResource,
   rejectPendingResource,
   removePendingResource,
 } from "@/app/lib/database"
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export async function getPendingResources() {
+  const resources = await prisma.resource.findMany({
+    where: {
+      status: "pending", // or ResourceStatus.pending if enum used
+    },
+    include: {
+      category: true,
+      ResourceField: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return resources.map((resource) => ({
+    id: resource.id,
+    category: resource.categoryId,
+    categoryLabel: resource.category.label,
+    submittedAt: resource.createdAt,
+    status: resource.status,
+    data: resource.ResourceField.map((field) => ({
+      id: field.id,
+      name: field.name,
+      value: field.value,
+    })),
+  }));
+}
 
 export async function GET() {
   try {
-    console.log("🔄 API: Fetching pending resources from database...")
-    const pendingResources = await getPendingResources()
-    console.log("📋 Database response:", pendingResources.length, "pending resources")
+    console.log("🔄 API: Fetching pending resources from database...");
+    const pendingResources = await getPendingResources();
+    console.log("📋 Database response:", pendingResources.length, "pending resources");
 
     return NextResponse.json({
       success: true,
       data: pendingResources,
-    })
+    });
   } catch (error) {
-    console.error("❌ Failed to fetch pending resources:", error)
+    console.error("❌ Failed to fetch pending resources:", error);
     return NextResponse.json(
       {
         success: false,
@@ -26,9 +56,10 @@ export async function GET() {
         data: [],
       },
       { status: 500 },
-    )
+    );
   }
 }
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,7 +98,10 @@ export async function POST(request: NextRequest) {
 
       case "approve": {
         const { resourceId, adminNotes } = body
-        const success = await approvePendingResource(resourceId, adminNotes)
+        const success = await prisma.resource.update({
+          where: { id: resourceId },
+          data: { adminNote: adminNotes, status: "approve" },
+        })
 
         if (success) {
           return NextResponse.json({
@@ -87,7 +121,10 @@ export async function POST(request: NextRequest) {
 
       case "reject": {
         const { resourceId, adminNotes } = body
-        const success = await rejectPendingResource(resourceId, adminNotes)
+        const success = await prisma.resource.update({
+          where: { id: resourceId },
+          data: { adminNote: adminNotes, status: "reject" },
+        })
 
         if (success) {
           return NextResponse.json({

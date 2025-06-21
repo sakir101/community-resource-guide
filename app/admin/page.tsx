@@ -1,131 +1,222 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Plus, Save, Trash2, LogOut, Edit, X, Settings } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { getSettings, saveSettings } from "@/app/lib/settings"
-import type { CategoryDefinition } from "../lib/storage"
-import { IconSelector } from "@/app/components/icon-selector"
-import { getUsers, deleteUser, updateUser, type User } from "@/app/lib/user-storage"
-import { ApprovedEmailsManager } from "./approved-emails"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  Plus,
+  Save,
+  Trash2,
+  LogOut,
+  Edit,
+  X,
+  Settings,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { getSettings, saveSettings } from "@/app/lib/settings";
+import type { CategoryDefinition } from "../lib/storage";
+import { IconSelector } from "@/app/components/icon-selector";
+import {
+  getUsers,
+  deleteUser,
+  updateUser,
+  type User,
+} from "@/app/lib/user-storage";
+import { ApprovedEmailsManager } from "./approved-emails";
 
 interface PendingResource {
-  id: string
-  category: string
-  data: any
-  submittedAt: string
-  status: "pending" | "approved" | "rejected"
+  id: string;
+  category: string;
+  data: any;
+  submittedAt: string;
+  status: "pending" | "approved" | "rejected";
 }
 
 interface Feedback {
-  id: string
-  category: string
-  resourceName: string
-  resourceData: any
-  feedback: string
-  submittedAt: string
-  status: "pending" | "reviewed" | "resolved"
+  id: string;
+  category: string;
+  resourceName: string;
+  resourceData: any;
+  feedback: string;
+  submittedAt: string;
+  status: "PENDING" | "REVIEWED" | "RESOLVED";
+}
+
+interface NewField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  options: string[];
 }
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState("")
-  const [formData, setFormData] = useState<any>({})
-  const [activeTab, setActiveTab] = useState("add")
-  const [editingItem, setEditingItem] = useState<any>(null)
-  const [editFormData, setEditFormData] = useState<any>({})
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [pendingResources, setPendingResources] = useState<PendingResource[]>([])
-  const [selectedResource, setSelectedResource] = useState<PendingResource | null>(null)
-  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false)
-  const [adminNotes, setAdminNotes] = useState("")
-  const [feedbackList, setFeedbackList] = useState<Feedback[]>([])
-  const router = useRouter()
-  const { toast } = useToast()
-  const [currentData, setCurrentData] = useState<any>({})
-  const [customCategories, setCustomCategories] = useState<CategoryDefinition[]>([])
-  const [categoryCounts, setCategoryCounts] = useState<{ [key: string]: number }>({})
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [formData, setFormData] = useState<any>({});
+  const [activeTab, setActiveTab] = useState("add");
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState<any>({});
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [pendingResources, setPendingResources] = useState<PendingResource[]>(
+    []
+  );
+  const [selectedResource, setSelectedResource] =
+    useState<PendingResource | null>(null);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [adminNotes, setAdminNotes] = useState("");
+  const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
+  const router = useRouter();
+  const { toast } = useToast();
+  const [currentData, setCurrentData] = useState<any>({});
+  const [optionsInput, setOptionsInput] = useState("");
+  const [customCategories, setCustomCategories] = useState<
+    CategoryDefinition[]
+  >([]);
+  const [categoryCounts, setCategoryCounts] = useState<{
+    [key: string]: number;
+  }>({});
   const [newCategoryData, setNewCategoryData] = useState({
     name: "",
     label: "",
     description: "",
     icon: "Folder",
     color: "bg-gray-50 text-gray-600 border-gray-200",
-  })
+  });
   const [adminSettings, setAdminSettings] = useState({
     adminEmail: "",
     emailNotificationsEnabled: true,
     web3FormsKey: "",
-  })
-  const [isTestingEmail, setIsTestingEmail] = useState(false)
-  const [categoryFields, setCategoryFields] = useState<any[]>([])
-  const [isAddingField, setIsAddingField] = useState(false)
-  const [newField, setNewField] = useState({
+  });
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [categoryFields, setCategoryFields] = useState<any[]>([]);
+  const [isAddingField, setIsAddingField] = useState(false);
+  const [newField, setNewField] = useState<NewField>({
     name: "",
     label: "",
-    type: "text",
+    type: "",
     required: false,
     options: [],
-  })
-  const [editingCategory, setEditingCategory] = useState<CategoryDefinition | null>(null)
-  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false)
+  });
+  const [editingCategory, setEditingCategory] =
+    useState<CategoryDefinition | null>(null);
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] =
+    useState(false);
   const [editCategoryData, setEditCategoryData] = useState({
     name: "",
     label: "",
     description: "",
     icon: "Folder",
     color: "bg-gray-50 text-gray-600 border-gray-200",
-  })
-  const [editCategoryFields, setEditCategoryFields] = useState<any[]>([])
-  const [users, setUsers] = useState<User[]>([])
+  });
+  const [editCategoryFields, setEditCategoryFields] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [allCategories, setAllCategories] = useState<CategoryDefinition[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const getCategories = async () => {
+      try {
+        const res = await fetch("/api/categories");
+        const data = await res.json();
+
+        if (data.success) {
+          const transformedCategories: CategoryDefinition[] = data.data.map(
+            (cat: any) => ({
+              id: cat.id,
+              name: cat.name,
+              label: cat.label,
+              description: cat.description,
+              icon: cat.icon,
+              color: cat.color,
+              createdAt: cat.createdAt,
+              isDefault: cat.isDefault,
+              fields: cat.categoryFields ?? [],
+            })
+          );
+
+          setAllCategories(transformedCategories);
+
+          setCategories(
+            data.data.map((cat: any) => ({
+              value: cat.id,
+              label: cat.label,
+            }))
+          );
+        } else {
+          console.error("Failed:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getCategories();
+  }, []);
+
+  // if (loading) return <p>Loading...</p>;
 
   useEffect(() => {
     // Check if user is authenticated
-    const isAdmin = localStorage.getItem("isAdmin")
-    const loginTime = localStorage.getItem("adminLoginTime")
+    const isAdmin = localStorage.getItem("isAdmin");
+    const loginTime = localStorage.getItem("adminLoginTime");
 
     if (isAdmin === "true" && loginTime) {
       // Check if session is still valid (24 hours)
-      const now = Date.now()
-      const loginTimestamp = Number.parseInt(loginTime)
-      const sessionDuration = 24 * 60 * 60 * 1000 // 24 hours
+      const now = Date.now();
+      const loginTimestamp = Number.parseInt(loginTime);
+      const sessionDuration = 24 * 60 * 60 * 1000; // 24 hours
 
       if (now - loginTimestamp < sessionDuration) {
-        setIsAuthenticated(true)
-        fetchPendingResources()
-        fetchFeedback()
-        fetchCustomCategories()
-        loadCategoryCounts()
-        fetchUsers()
+        setIsAuthenticated(true);
+        fetchPendingResources();
+        fetchFeedback();
+        fetchCustomCategories();
+        loadCategoryCounts();
+        fetchUsers();
       } else {
-        handleLogout()
+        handleLogout();
       }
     } else {
-      router.push("/login")
+      router.push("/login");
     }
-  }, [router])
+  }, [router]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadAdminSettings()
+      loadAdminSettings();
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated]);
 
   const loadCategoryCounts = async () => {
-    const counts: { [key: string]: number } = {}
+    const counts: { [key: string]: number } = {};
 
     // Default categories
     const defaultCategories = [
@@ -135,361 +226,528 @@ export default function AdminPage() {
       "hamaspik-programs",
       "contracted-programs",
       "perks",
-    ]
+    ];
 
     for (const category of defaultCategories) {
       try {
-        const response = await fetch(`/api/resources?category=${category}`)
-        if (response.ok) {
-          const result = await response.json()
+        // const response = await fetch(`/api/resources?category=${category}`);
+        const response = {
+          true: true,
+          json: async () => ({ success: true, data: [] }),
+        }; // Mock response for testing
+        if (response) {
+          const result = await response.json();
           if (result.success && Array.isArray(result.data)) {
-            counts[category] = result.data.length
+            // counts[category] = result.data.length;
+            counts[category] = 2;
           }
         }
       } catch (error) {
-        console.error(`Error loading count for ${category}:`, error)
-        counts[category] = 0
+        counts[category] = 0;
       }
     }
 
     // Custom categories
     for (const category of customCategories) {
       try {
-        const response = await fetch(`/api/resources?category=${category.name}`)
-        if (response.ok) {
-          const result = await response.json()
+        // const response = await fetch(
+        //   `/api/resources?category=${category.name}`
+        // );
+        const response = {
+          true: true,
+          json: async () => ({ success: true, data: [] }),
+        };
+        if (response) {
+          const result = await response.json();
           if (result.success && Array.isArray(result.data)) {
-            counts[category.name] = result.data.length
+            // counts[category.name] = result.data.length;
+            counts[category.name] = 2;
           }
         }
       } catch (error) {
-        console.error(`Error loading count for ${category.name}:`, error)
-        counts[category.name] = 0
+        console.error(`Error loading count for ${category.name}:`, error);
+        counts[category.name] = 0;
       }
     }
 
-    setCategoryCounts(counts)
-  }
+    setCategoryCounts(counts);
+  };
 
   useEffect(() => {
     if (customCategories.length > 0) {
-      loadCategoryCounts()
+      loadCategoryCounts();
     }
-  }, [customCategories])
+  }, [customCategories]);
 
   const fetchPendingResources = async () => {
     try {
-      console.log("🔄 Fetching pending resources from API...")
-      const response = await fetch("/api/pending-resources")
-      const result = await response.json()
-      console.log("📋 API response:", result)
+      const response = await fetch("/api/pending-resources");
+      const result = await response.json();
 
       if (result.success) {
-        console.log("✅ Setting pending resources:", result.data.length, "items")
-        setPendingResources(result.data)
+        setPendingResources(result.data);
       } else {
-        console.error("❌ API returned error:", result.message)
+        console.error("❌ API returned error:", result.message);
       }
     } catch (error) {
-      console.error("❌ Failed to fetch pending resources:", error)
+      console.error("❌ Failed to fetch pending resources:", error);
     }
-  }
+  };
 
   const fetchFeedback = async () => {
     try {
-      const response = await fetch("/api/submit-feedback")
+      const response = await fetch("/api/submit-feedback");
+
+      console.log(response);
 
       if (!response.ok) {
-        console.error("Failed to fetch feedback - Response not OK:", response.status)
-        return
+        console.error(
+          "Failed to fetch feedback - Response not OK:",
+          response.status
+        );
+        return;
       }
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
-        setFeedbackList(result.data || [])
+        setFeedbackList(result.data || []);
       } else {
-        console.error("Failed to fetch feedback:", result.message)
-        setFeedbackList([])
+        console.error("Failed to fetch feedback:", result.message);
+        setFeedbackList([]);
       }
     } catch (error) {
-      console.error("Failed to fetch feedback:", error)
-      setFeedbackList([])
+      console.error("Failed to fetch feedback:", error);
+      setFeedbackList([]);
     }
-  }
+  };
 
   const fetchCustomCategories = async () => {
     try {
-      const response = await fetch("/api/categories")
-      const result = await response.json()
-      if (result.success) {
-        setCustomCategories(result.data)
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+      if (data.success) {
+        const transformedCategories: CategoryDefinition[] = data.data.map(
+          (cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            label: cat.label,
+            description: cat.description,
+            icon: cat.icon,
+            color: cat.color,
+            createdAt: cat.createdAt,
+            isDefault: cat.isDefault,
+            fields: cat.categoryFields ?? [],
+          })
+        );
+
+        setCustomCategories(transformedCategories);
       }
     } catch (error) {
-      console.error("Failed to fetch custom categories:", error)
+      console.error("Failed to fetch custom categories:", error);
     }
-  }
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem("isAdmin")
-    localStorage.removeItem("adminLoginTime")
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("adminLoginTime");
     toast({
       title: "Logged Out",
       description: "You have been logged out successfully.",
-    })
-    router.push("/login")
-  }
+    });
+    router.push("/login");
+  };
 
-  const allCategories = [
-    {
-      id: "camps",
-      name: "camps",
-      label: "Camps",
-      description: "Summer camps and recreational programs",
-      icon: "Users",
-      color: "bg-green-50 text-green-600 border-green-200",
-      isDefault: true,
-      fields: [
-        { name: "campName", label: "Camp Name", type: "text", required: true },
-        { name: "contactPerson", label: "Contact Person", type: "text", required: true },
-        { name: "phone", label: "Phone", type: "text", required: true },
-        { name: "email", label: "Email", type: "email" },
-        { name: "underAuspicesOf", label: "Under Auspices Of", type: "text" },
-        { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both", "mixed"] },
-        { name: "ages", label: "Ages", type: "text" },
-        { name: "description", label: "Description", type: "textarea" },
-        { name: "location", label: "Location", type: "text" },
-        { name: "integrated", label: "Integration Type", type: "text" },
-        { name: "medicalNeeds", label: "Medical Needs", type: "text" },
-        { name: "tuition", label: "Tuition", type: "text" },
-        { name: "comments", label: "Comments", type: "textarea" },
-      ],
-    },
-    {
-      id: "schools",
-      name: "schools",
-      label: "Schools",
-      description: "Educational institutions and schools",
-      icon: "GraduationCap",
-      color: "bg-blue-50 text-blue-600 border-blue-200",
-      isDefault: true,
-      fields: [
-        { name: "name", label: "School Name", type: "text", required: true },
-        { name: "location", label: "Location", type: "text", required: true },
-        { name: "contactPerson", label: "Contact Person", type: "text", required: true },
-        { name: "phone", label: "Phone", type: "text", required: true },
-        { name: "email", label: "Email", type: "email" },
-        { name: "studentsServed", label: "Students Served", type: "textarea" },
-      ],
-    },
-    {
-      id: "medical-supplies",
-      name: "medical-supplies",
-      label: "Medical Supplies",
-      description: "Medical supplies and equipment resources",
-      icon: "Stethoscope",
-      color: "bg-red-50 text-red-600 border-red-200",
-      isDefault: true,
-      fields: [
-        { name: "resource", label: "Resource Name", type: "text", required: true },
-        { name: "contact", label: "Contact Info", type: "text", required: true },
-        { name: "email", label: "Email", type: "email" },
-        { name: "notes", label: "Notes", type: "textarea" },
-        { name: "moreItems", label: "Additional Items", type: "textarea" },
-      ],
-    },
-    {
-      id: "hamaspik-programs",
-      name: "hamaspik-programs",
-      label: "Hamaspik Programs",
-      description: "Hamaspik organization programs and services",
-      icon: "Heart",
-      color: "bg-purple-50 text-purple-600 border-purple-200",
-      isDefault: true,
-      fields: [
-        { name: "program", label: "Program Name", type: "text", required: true },
-        { name: "gender", label: "Gender", type: "select", options: ["Male", "Female", "Both"] },
-        { name: "functioningLevel", label: "Functioning Level", type: "text" },
-        { name: "location", label: "Location", type: "text" },
-        { name: "daysOpen", label: "Days Open", type: "text" },
-        { name: "contact", label: "Contact", type: "text" },
-        { name: "runBy", label: "Run By", type: "text" },
-      ],
-    },
-    {
-      id: "contracted-programs",
-      name: "contracted-programs",
-      label: "Contracted Programs",
-      description: "Active contracted programs and services",
-      icon: "Building",
-      color: "bg-orange-50 text-orange-600 border-orange-200",
-      isDefault: true,
-      fields: [
-        { name: "name", label: "Program Name", type: "text", required: true },
-        { name: "programType", label: "Program Type", type: "text" },
-        { name: "location", label: "Location", type: "text" },
-        { name: "phone", label: "Phone", type: "text" },
-        { name: "email", label: "Email", type: "email" },
-        { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both"] },
-        { name: "ages", label: "Ages", type: "text" },
-        { name: "whoItsFor", label: "Who It's For", type: "textarea" },
-        { name: "description", label: "Description", type: "textarea" },
-        { name: "toSignUp", label: "How to Sign Up", type: "text" },
-      ],
-    },
-    {
-      id: "perks",
-      name: "perks",
-      label: "Perks",
-      description: "Special perks and benefits available",
-      icon: "Gift",
-      color: "bg-pink-50 text-pink-600 border-pink-200",
-      isDefault: true,
-      fields: [
-        { name: "title", label: "Perk Title", type: "text", required: true },
-        { name: "description", label: "Description", type: "textarea", required: true },
-        { name: "details", label: "Details", type: "textarea" },
-      ],
-    },
-    ...customCategories.map((cat) => ({
-      ...cat,
-      isDefault: false,
-      icon: cat.icon || "Folder", // Ensure icon is always present
-    })),
-  ]
+  // const allCategories = [
+  //   {
+  //     id: "camps",
+  //     name: "camps",
+  //     label: "Camps",
+  //     description: "Summer camps and recreational programs",
+  //     icon: "Users",
+  //     color: "bg-green-50 text-green-600 border-green-200",
+  //     isDefault: true,
+  //     fields: [
+  //       { name: "campName", label: "Camp Name", type: "text", required: true },
+  //       {
+  //         name: "contactPerson",
+  //         label: "Contact Person",
+  //         type: "text",
+  //         required: true,
+  //       },
+  //       { name: "phone", label: "Phone", type: "text", required: true },
+  //       { name: "email", label: "Email", type: "email" },
+  //       { name: "underAuspicesOf", label: "Under Auspices Of", type: "text" },
+  //       {
+  //         name: "gender",
+  //         label: "Gender",
+  //         type: "select",
+  //         options: ["boys", "girls", "both", "mixed"],
+  //       },
+  //       { name: "ages", label: "Ages", type: "text" },
+  //       { name: "description", label: "Description", type: "textarea" },
+  //       { name: "location", label: "Location", type: "text" },
+  //       { name: "integrated", label: "Integration Type", type: "text" },
+  //       { name: "medicalNeeds", label: "Medical Needs", type: "text" },
+  //       { name: "tuition", label: "Tuition", type: "text" },
+  //       { name: "comments", label: "Comments", type: "textarea" },
+  //     ],
+  //   },
+  //   {
+  //     id: "schools",
+  //     name: "schools",
+  //     label: "Schools",
+  //     description: "Educational institutions and schools",
+  //     icon: "GraduationCap",
+  //     color: "bg-blue-50 text-blue-600 border-blue-200",
+  //     isDefault: true,
+  //     fields: [
+  //       { name: "name", label: "School Name", type: "text", required: true },
+  //       { name: "location", label: "Location", type: "text", required: true },
+  //       {
+  //         name: "contactPerson",
+  //         label: "Contact Person",
+  //         type: "text",
+  //         required: true,
+  //       },
+  //       { name: "phone", label: "Phone", type: "text", required: true },
+  //       { name: "email", label: "Email", type: "email" },
+  //       { name: "studentsServed", label: "Students Served", type: "textarea" },
+  //     ],
+  //   },
+  //   {
+  //     id: "medical-supplies",
+  //     name: "medical-supplies",
+  //     label: "Medical Supplies",
+  //     description: "Medical supplies and equipment resources",
+  //     icon: "Stethoscope",
+  //     color: "bg-red-50 text-red-600 border-red-200",
+  //     isDefault: true,
+  //     fields: [
+  //       {
+  //         name: "resource",
+  //         label: "Resource Name",
+  //         type: "text",
+  //         required: true,
+  //       },
+  //       {
+  //         name: "contact",
+  //         label: "Contact Info",
+  //         type: "text",
+  //         required: true,
+  //       },
+  //       { name: "email", label: "Email", type: "email" },
+  //       { name: "notes", label: "Notes", type: "textarea" },
+  //       { name: "moreItems", label: "Additional Items", type: "textarea" },
+  //     ],
+  //   },
+  //   {
+  //     id: "hamaspik-programs",
+  //     name: "hamaspik-programs",
+  //     label: "Hamaspik Programs",
+  //     description: "Hamaspik organization programs and services",
+  //     icon: "Heart",
+  //     color: "bg-purple-50 text-purple-600 border-purple-200",
+  //     isDefault: true,
+  //     fields: [
+  //       {
+  //         name: "program",
+  //         label: "Program Name",
+  //         type: "text",
+  //         required: true,
+  //       },
+  //       {
+  //         name: "gender",
+  //         label: "Gender",
+  //         type: "select",
+  //         options: ["Male", "Female", "Both"],
+  //       },
+  //       { name: "functioningLevel", label: "Functioning Level", type: "text" },
+  //       { name: "location", label: "Location", type: "text" },
+  //       { name: "daysOpen", label: "Days Open", type: "text" },
+  //       { name: "contact", label: "Contact", type: "text" },
+  //       { name: "runBy", label: "Run By", type: "text" },
+  //     ],
+  //   },
+  //   {
+  //     id: "contracted-programs",
+  //     name: "contracted-programs",
+  //     label: "Contracted Programs",
+  //     description: "Active contracted programs and services",
+  //     icon: "Building",
+  //     color: "bg-orange-50 text-orange-600 border-orange-200",
+  //     isDefault: true,
+  //     fields: [
+  //       { name: "name", label: "Program Name", type: "text", required: true },
+  //       { name: "programType", label: "Program Type", type: "text" },
+  //       { name: "location", label: "Location", type: "text" },
+  //       { name: "phone", label: "Phone", type: "text" },
+  //       { name: "email", label: "Email", type: "email" },
+  //       {
+  //         name: "gender",
+  //         label: "Gender",
+  //         type: "select",
+  //         options: ["boys", "girls", "both"],
+  //       },
+  //       { name: "ages", label: "Ages", type: "text" },
+  //       { name: "whoItsFor", label: "Who It's For", type: "textarea" },
+  //       { name: "description", label: "Description", type: "textarea" },
+  //       { name: "toSignUp", label: "How to Sign Up", type: "text" },
+  //     ],
+  //   },
+  //   {
+  //     id: "perks",
+  //     name: "perks",
+  //     label: "Perks",
+  //     description: "Special perks and benefits available",
+  //     icon: "Gift",
+  //     color: "bg-pink-50 text-pink-600 border-pink-200",
+  //     isDefault: true,
+  //     fields: [
+  //       { name: "title", label: "Perk Title", type: "text", required: true },
+  //       {
+  //         name: "description",
+  //         label: "Description",
+  //         type: "textarea",
+  //         required: true,
+  //       },
+  //       { name: "details", label: "Details", type: "textarea" },
+  //     ],
+  //   },
+  //   ...customCategories.map((cat) => ({
+  //     ...cat,
+  //     isDefault: false,
+  //     icon: cat.icon || "Folder", // Ensure icon is always present
+  //   })),
+  // ];
 
-  const categories = [
-    { value: "camps", label: "Camps" },
-    { value: "schools", label: "Schools" },
-    { value: "medical-supplies", label: "Medical Supplies" },
-    { value: "hamaspik-programs", label: "Hamaspik Programs" },
-    { value: "contracted-programs", label: "Contracted Programs" },
-    { value: "perks", label: "Perks" },
-    ...customCategories.map((cat) => ({ value: cat.id, label: cat.label })),
-  ]
+  // const categories = [
+  //   { value: "camps", label: "Camps" },
+  //   { value: "schools", label: "Schools" },
+  //   { value: "medical-supplies", label: "Medical Supplies" },
+  //   { value: "hamaspik-programs", label: "Hamaspik Programs" },
+  //   { value: "contracted-programs", label: "Contracted Programs" },
+  //   { value: "perks", label: "Perks" },
+  //   ...customCategories.map((cat) => ({ value: cat.id, label: cat.label })),
+  // ];
 
-  const getFormFields = (category: string) => {
-    // Check if it's a custom category
-    const customCategory = customCategories.find((cat) => cat.id === category)
-    if (customCategory) {
-      return customCategory.fields
-    }
+  // const getFormFields = (category: string) => {
+  //   // Check if it's a custom category
+  //   const customCategory = customCategories.find((cat) => cat.id === category);
+  //   if (customCategory) {
+  //     return customCategory.fields;
+  //   }
 
-    switch (category) {
-      case "camps":
-        return [
-          { name: "campName", label: "Camp Name", type: "text", required: true },
-          { name: "contactPerson", label: "Contact Person", type: "text", required: true },
-          { name: "phone", label: "Phone", type: "text", required: true },
-          { name: "email", label: "Email", type: "email" },
-          { name: "underAuspicesOf", label: "Under Auspices Of", type: "text" },
-          { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both", "mixed"] },
-          { name: "ages", label: "Ages", type: "text" },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "location", label: "Location", type: "text" },
-          { name: "integrated", label: "Integration Type", type: "text" },
-          { name: "medicalNeeds", label: "Medical Needs", type: "text" },
-          { name: "tuition", label: "Tuition", type: "text" },
-          { name: "comments", label: "Comments", type: "textarea" },
-        ]
-      case "schools":
-        return [
-          { name: "name", label: "School Name", type: "text", required: true },
-          { name: "location", label: "Location", type: "text", required: true },
-          { name: "contactPerson", label: "Contact Person", type: "text", required: true },
-          { name: "phone", label: "Phone", type: "text", required: true },
-          { name: "email", label: "Email", type: "email" },
-          { name: "studentsServed", label: "Students Served", type: "textarea" },
-        ]
-      case "medical-supplies":
-        return [
-          { name: "resource", label: "Resource Name", type: "text", required: true },
-          { name: "contact", label: "Contact Info", type: "text", required: true },
-          { name: "email", label: "Email", type: "email" },
-          { name: "notes", label: "Notes", type: "textarea" },
-          { name: "moreItems", label: "Additional Items", type: "textarea" },
-        ]
-      case "hamaspik-programs":
-        return [
-          { name: "program", label: "Program Name", type: "text", required: true },
-          { name: "gender", label: "Gender", type: "select", options: ["Male", "Female", "Both"] },
-          { name: "functioningLevel", label: "Functioning Level", type: "text" },
-          { name: "location", label: "Location", type: "text" },
-          { name: "daysOpen", label: "Days Open", type: "text" },
-          { name: "contact", label: "Contact", type: "text" },
-          { name: "runBy", label: "Run By", type: "text" },
-        ]
-      case "contracted-programs":
-        return [
-          { name: "name", label: "Program Name", type: "text", required: true },
-          { name: "programType", label: "Program Type", type: "text" },
-          { name: "location", label: "Location", type: "text" },
-          { name: "phone", label: "Phone", type: "text" },
-          { name: "email", label: "Email", type: "email" },
-          { name: "gender", label: "Gender", type: "select", options: ["boys", "girls", "both"] },
-          { name: "ages", label: "Ages", type: "text" },
-          { name: "whoItsFor", label: "Who It's For", type: "textarea" },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "toSignUp", label: "How to Sign Up", type: "text" },
-        ]
-      case "perks":
-        return [
-          { name: "title", label: "Perk Title", type: "text", required: true },
-          { name: "description", label: "Description", type: "textarea", required: true },
-          { name: "details", label: "Details", type: "textarea" },
-        ]
-      default:
-        return []
-    }
-  }
+  //   switch (category) {
+  //     case "camps":
+  //       return [
+  //         {
+  //           name: "campName",
+  //           label: "Camp Name",
+  //           type: "text",
+  //           required: true,
+  //         },
+  //         {
+  //           name: "contactPerson",
+  //           label: "Contact Person",
+  //           type: "text",
+  //           required: true,
+  //         },
+  //         { name: "phone", label: "Phone", type: "text", required: true },
+  //         { name: "email", label: "Email", type: "email" },
+  //         { name: "underAuspicesOf", label: "Under Auspices Of", type: "text" },
+  //         {
+  //           name: "gender",
+  //           label: "Gender",
+  //           type: "select",
+  //           options: ["boys", "girls", "both", "mixed"],
+  //         },
+  //         { name: "ages", label: "Ages", type: "text" },
+  //         { name: "description", label: "Description", type: "textarea" },
+  //         { name: "location", label: "Location", type: "text" },
+  //         { name: "integrated", label: "Integration Type", type: "text" },
+  //         { name: "medicalNeeds", label: "Medical Needs", type: "text" },
+  //         { name: "tuition", label: "Tuition", type: "text" },
+  //         { name: "comments", label: "Comments", type: "textarea" },
+  //       ];
+  //     case "schools":
+  //       return [
+  //         { name: "name", label: "School Name", type: "text", required: true },
+  //         { name: "location", label: "Location", type: "text", required: true },
+  //         {
+  //           name: "contactPerson",
+  //           label: "Contact Person",
+  //           type: "text",
+  //           required: true,
+  //         },
+  //         { name: "phone", label: "Phone", type: "text", required: true },
+  //         { name: "email", label: "Email", type: "email" },
+  //         {
+  //           name: "studentsServed",
+  //           label: "Students Served",
+  //           type: "textarea",
+  //         },
+  //       ];
+  //     case "medical-supplies":
+  //       return [
+  //         {
+  //           name: "resource",
+  //           label: "Resource Name",
+  //           type: "text",
+  //           required: true,
+  //         },
+  //         {
+  //           name: "contact",
+  //           label: "Contact Info",
+  //           type: "text",
+  //           required: true,
+  //         },
+  //         { name: "email", label: "Email", type: "email" },
+  //         { name: "notes", label: "Notes", type: "textarea" },
+  //         { name: "moreItems", label: "Additional Items", type: "textarea" },
+  //       ];
+  //     case "hamaspik-programs":
+  //       return [
+  //         {
+  //           name: "program",
+  //           label: "Program Name",
+  //           type: "text",
+  //           required: true,
+  //         },
+  //         {
+  //           name: "gender",
+  //           label: "Gender",
+  //           type: "select",
+  //           options: ["Male", "Female", "Both"],
+  //         },
+  //         {
+  //           name: "functioningLevel",
+  //           label: "Functioning Level",
+  //           type: "text",
+  //         },
+  //         { name: "location", label: "Location", type: "text" },
+  //         { name: "daysOpen", label: "Days Open", type: "text" },
+  //         { name: "contact", label: "Contact", type: "text" },
+  //         { name: "runBy", label: "Run By", type: "text" },
+  //       ];
+  //     case "contracted-programs":
+  //       return [
+  //         { name: "name", label: "Program Name", type: "text", required: true },
+  //         { name: "programType", label: "Program Type", type: "text" },
+  //         { name: "location", label: "Location", type: "text" },
+  //         { name: "phone", label: "Phone", type: "text" },
+  //         { name: "email", label: "Email", type: "email" },
+  //         {
+  //           name: "gender",
+  //           label: "Gender",
+  //           type: "select",
+  //           options: ["boys", "girls", "both"],
+  //         },
+  //         { name: "ages", label: "Ages", type: "text" },
+  //         { name: "whoItsFor", label: "Who It's For", type: "textarea" },
+  //         { name: "description", label: "Description", type: "textarea" },
+  //         { name: "toSignUp", label: "How to Sign Up", type: "text" },
+  //       ];
+  //     case "perks":
+  //       return [
+  //         { name: "title", label: "Perk Title", type: "text", required: true },
+  //         {
+  //           name: "description",
+  //           label: "Description",
+  //           type: "textarea",
+  //           required: true,
+  //         },
+  //         { name: "details", label: "Details", type: "textarea" },
+  //       ];
+  //     default:
+  //       return [];
+  //   }
+  // };
+
+  const getFormFields = (id: string) => {
+    const selectedCategory = allCategories.find((cat) => cat.id === id);
+    if (!selectedCategory) return [];
+    return selectedCategory.fields.map((field) => ({
+      id: field.id || "",
+      name: field.name,
+      label: field.label,
+      type: field.type,
+      required: field.required,
+      options: field.options ?? [],
+    }));
+  };
 
   const handleInputChange = (name: string, value: string) => {
-    setFormData((prev: any) => ({ ...prev, [name]: value }))
-  }
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
 
-  const handleEditInputChange = (name: string, value: string) => {
-    setEditFormData((prev: any) => ({ ...prev, [name]: value }))
-  }
+  const handleEditInputChange = (name: string, value: string, id: string) => {
+    setEditFormData((prev: any) => {
+      const updatedFields = prev.field ? [...prev.field] : [];
+
+      const existingIndex = updatedFields.findIndex(
+        (f: any) => f.name === name
+      );
+
+      if (existingIndex !== -1) {
+        updatedFields[existingIndex] = { name, id, value };
+      } else {
+        updatedFields.push({ name, id, value });
+      }
+
+      return {
+        ...prev,
+        field: updatedFields,
+      };
+    });
+  };
 
   const forceRefreshAllData = async () => {
-    console.log("🔄 Force refreshing all data...")
-
     // Refresh custom categories
-    await fetchCustomCategories()
+    await fetchCustomCategories();
 
     // Refresh category counts
-    await loadCategoryCounts()
+    await loadCategoryCounts();
 
     // Refresh current category data if one is selected
     if (selectedCategory) {
-      await refreshData(selectedCategory)
+      await refreshData(selectedCategory);
     }
 
     toast({
       title: "Data Refreshed",
       description: "All data has been refreshed from the latest storage.",
-    })
-  }
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Validate required fields
-    const requiredFields = formFields.filter((field) => field.required)
-    const missingFields = requiredFields.filter((field) => !formData[field.name])
+    const requiredFields = formFields.filter((field) => field.required);
+    const missingFields = requiredFields.filter(
+      (field) => !formData[field.name]
+    );
 
     if (missingFields.length > 0) {
       toast({
         title: "Missing Required Fields",
-        description: `Please fill in all required fields: ${missingFields.map((f) => f.label).join(", ")}`,
+        description: `Please fill in all required fields: ${missingFields
+          .map((f) => f.label)
+          .join(", ")}`,
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    try {
-      console.log("Submitting resource:", { category: selectedCategory, data: formData })
+    // Convert formData to array of { name, id, value }
+    const payload = formFields.map((field) => ({
+      name: field.name,
+      id: field.id || "", // Make sure each field has an id; fallback to "" if not
+      value: formData[field.name] || "",
+    }));
 
+    try {
       const response = await fetch("/api/resources", {
         method: "POST",
         headers: {
@@ -498,51 +756,62 @@ export default function AdminPage() {
         body: JSON.stringify({
           action: "add",
           category: selectedCategory,
-          data: formData,
+          data: payload,
         }),
-      })
+      });
 
-      const result = await response.json()
-      console.log("API response:", result)
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Resource Added Successfully!",
           description: result.message,
-        })
+        });
 
         // Clear form
-        setFormData({})
-        setSelectedCategory("")
+        setFormData({});
+        setSelectedCategory("");
 
         // Force refresh all data immediately
-        await forceRefreshAllData()
+        await forceRefreshAllData();
 
         // Small delay to ensure data is synced, then refresh again
         setTimeout(async () => {
-          await forceRefreshAllData()
-        }, 500)
+          await forceRefreshAllData();
+        }, 500);
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
-      console.error("Error adding resource:", error)
+      console.error("Error adding resource:", error);
       toast({
         title: "Error",
         description: "Failed to add resource. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleEdit = (category: string, item: any, index: number) => {
-    setEditingItem({ ...item, index, category })
-    setEditFormData({ ...item })
-    setIsEditDialogOpen(true)
-  }
+    setEditingItem({ ...item, index, category });
+    setEditFormData({ ...item });
+    setIsEditDialogOpen(true);
+  };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+
+    const formatData = {
+      categoryId: editingItem.category,
+      resourceId: editFormData.id,
+      fields: editFormData.field?.map((f: any) => ({
+        name: f.name,
+        id: f.id || "", // Ensure each field has an id
+        value: f.value || "",
+      })),
+    };
+
+    console.log(formatData, "Formatted Data for Edit");
 
     try {
       const response = await fetch("/api/resources", {
@@ -554,59 +823,59 @@ export default function AdminPage() {
           action: "update",
           category: editingItem.category,
           index: editingItem.index,
-          data: editFormData,
+          data: formatData,
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Resource Updated Successfully!",
           description: result.message,
-        })
+        });
 
-        setIsEditDialogOpen(false)
-        setEditingItem(null)
-        setEditFormData({})
+        setIsEditDialogOpen(false);
+        setEditingItem(null);
+        setEditFormData({});
 
         // Force immediate data refresh with multiple attempts
-        console.log("🔄 Starting comprehensive data refresh after edit...")
 
         // Refresh the data for the current category immediately
-        await refreshData(editingItem.category)
+        await refreshData(editingItem.category);
 
         // Update category counts
-        await loadCategoryCounts()
+        await loadCategoryCounts();
 
         // Force refresh all data
-        await forceRefreshAllData()
+        await forceRefreshAllData();
 
         // Trigger storage event for cross-tab sync
         if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("refreshData"))
+          window.dispatchEvent(new Event("refreshData"));
         }
 
         // Additional refresh after a short delay to ensure persistence
         setTimeout(async () => {
-          console.log("🔄 Secondary refresh after edit...")
-          await refreshData(editingItem.category)
-          await loadCategoryCounts()
-        }, 1000)
+          await refreshData(editingItem.category);
+          await loadCategoryCounts();
+        }, 1000);
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update resource. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
-  const handleDelete = async (category: string, index: number, itemName: string) => {
-    if (confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`)) {
+  const handleDelete = async (category: string, index: number, item: any) => {
+    if (
+      confirm(`Are you sure you want to delete"? This action cannot be undone.`)
+    ) {
       try {
         const response = await fetch("/api/resources", {
           method: "POST",
@@ -615,129 +884,129 @@ export default function AdminPage() {
           },
           body: JSON.stringify({
             action: "delete",
-            category,
+            category: item.id,
             index,
           }),
-        })
+        });
 
-        const result = await response.json()
+        const result = await response.json();
 
         if (result.success) {
           toast({
             title: "Resource Deleted",
             description: result.message,
-          })
+          });
 
           // Refresh the data for the current category
-          await refreshData(category)
-          await loadCategoryCounts()
+          await refreshData(category);
+          await loadCategoryCounts();
         } else {
-          throw new Error(result.message)
+          throw new Error(result.message);
         }
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to delete resource. Please try again.",
           variant: "destructive",
-        })
+        });
       }
     }
-  }
+  };
 
   const openReviewDialog = (resource: PendingResource) => {
-    setSelectedResource(resource)
-    setIsReviewDialogOpen(true)
-    setAdminNotes("")
-  }
+    setSelectedResource(resource);
+    setIsReviewDialogOpen(true);
+    setAdminNotes("");
+  };
 
   const getItemDisplayName = (item: any, category: string) => {
+    console.log(item, "Item Data");
     // Check if it's a custom category
-    const customCategory = customCategories.find((cat) => cat.id === category)
+    const customCategory = customCategories.find((cat) => cat.id === category);
+
     if (customCategory) {
       // Use the first field as the display name
-      const firstField = customCategory.fields[0]
-      return item[firstField?.name] || "Unknown"
+      const firstField = customCategory.fields[0];
+      return item[firstField?.name] || "Unknown";
     }
 
     switch (category) {
       case "camps":
-        return item.campName
+        return item.campName;
       case "schools":
-        return item.name
+        return item.name;
       case "medical-supplies":
-        return item.resource
+        return item.resource;
       case "hamaspik-programs":
-        return item.program
+        return item.program;
       case "contracted-programs":
-        return item.name
+        return item.name;
       case "perks":
-        return item.title
+        return item.title;
       default:
-        return "Unknown"
+        return "Unknown";
     }
-  }
+  };
 
   const getResourceDisplayName = (resource: PendingResource) => {
-    return getItemDisplayName(resource.data, resource.category)
-  }
+    return getItemDisplayName(resource.data, resource.category);
+  };
 
   const fetchCurrentData = async (category: string) => {
     try {
-      const response = await fetch(`/api/resources?category=${category}`)
-      const result = await response.json()
+      const response = await fetch(`/api/resources?category=${category}`);
+      const result = await response.json();
       if (result.success) {
-        console.log(`Fetched ${category} data:`, result.data.length, "items")
-        return result.data
+        return result.data;
       }
     } catch (error) {
-      console.error("Failed to fetch current data:", error)
+      console.error("Failed to fetch current data:", error);
     }
-    return []
-  }
+    return [];
+  };
 
   const refreshData = async (category: string) => {
     try {
-      console.log(`🔄 Refreshing data for category: ${category}`)
-
       // Add cache buster to ensure fresh data
-      const response = await fetch(`/api/resources?category=${category}&_t=${Date.now()}`)
-      const result = await response.json()
+      const response = await fetch(
+        `/api/resources?category=${category}&_t=${Date.now()}`
+      );
+      const result = await response.json();
 
       if (result.success) {
-        console.log(`✅ Refreshed ${category}: ${result.data.length} items`)
-        setCurrentData((prev) => ({ ...prev, [category]: result.data }))
-        return result.data
+        setCurrentData((prev) => ({ ...prev, [category]: result.data }));
+        return result.data;
       } else {
-        console.error(`❌ Failed to refresh ${category}:`, result.message)
+        console.error(`❌ Failed to refresh ${category}:`, result.message);
       }
     } catch (error) {
-      console.error(`❌ Error refreshing ${category}:`, error)
+      console.error(`❌ Error refreshing ${category}:`, error);
     }
-    return []
-  }
+    return [];
+  };
 
   useEffect(() => {
     if (selectedCategory) {
-      refreshData(selectedCategory)
+      refreshData(selectedCategory);
     }
-  }, [selectedCategory])
+  }, [selectedCategory]);
 
   const getCurrentCategoryData = (category: string) => {
-    return currentData[category] || []
-  }
+    return currentData[category] || [];
+  };
 
   const loadAdminSettings = () => {
     try {
-      const settings = getSettings()
+      const settings = getSettings();
       setAdminSettings({
         adminEmail: settings.adminEmail || "",
-        emailNotifications: settings.emailNotifications ?? true,
+        emailNotificationsEnabled: settings.emailNotifications ?? true,
         web3FormsKey: settings.web3FormsKey || "",
-      })
+      });
     } catch (error) {
-      console.error("Failed to load admin settings:", error)
+      console.error("Failed to load admin settings:", error);
     }
-  }
+  };
 
   const handleSaveSettings = async () => {
     try {
@@ -745,20 +1014,21 @@ export default function AdminPage() {
         adminEmail: adminSettings.adminEmail,
         emailNotifications: adminSettings.emailNotificationsEnabled,
         web3FormsKey: adminSettings.web3FormsKey,
-      })
+      });
 
       toast({
         title: "Settings Saved",
-        description: "Your notification settings have been updated successfully.",
-      })
+        description:
+          "Your notification settings have been updated successfully.",
+      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to save settings. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleTestEmail = async () => {
     if (!adminSettings.adminEmail) {
@@ -766,11 +1036,11 @@ export default function AdminPage() {
         title: "Email Required",
         description: "Please set an admin email address first.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsTestingEmail(true)
+    setIsTestingEmail(true);
 
     try {
       const response = await fetch("/api/send-notification", {
@@ -783,32 +1053,33 @@ export default function AdminPage() {
           email: adminSettings.adminEmail,
           data: {},
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Test Email Sent!",
           description: `Check your inbox at ${adminSettings.adminEmail}`,
-        })
+        });
       } else {
         toast({
           title: "Email Failed",
-          description: "Failed to send test email. Please check your email address.",
+          description:
+            "Failed to send test email. Please check your email address.",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
       toast({
         title: "Test Failed",
         description: "Failed to send test email. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsTestingEmail(false)
+      setIsTestingEmail(false);
     }
-  }
+  };
 
   const recoverData = async () => {
     try {
@@ -822,32 +1093,32 @@ export default function AdminPage() {
           action: "recover",
           category: "perks",
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Data Recovered",
           description: "Perks data has been restored successfully.",
-        })
+        });
 
         // Refresh all data
-        await loadCategoryCounts()
+        await loadCategoryCounts();
         if (selectedCategory) {
-          await refreshData(selectedCategory)
+          await refreshData(selectedCategory);
         }
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
       toast({
         title: "Recovery Failed",
         description: "Failed to recover data. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleAddField = () => {
     if (!newField.name || !newField.label) {
@@ -855,109 +1126,96 @@ export default function AdminPage() {
         title: "Missing Information",
         description: "Please provide both field name and label.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     const field = {
       ...newField,
-      options: newField.type === "select" ? newField.options : undefined,
-    }
+      options: newField.type === "SELECT" ? newField.options : undefined,
+    };
 
-    console.log("Adding field:", field)
-    setCategoryFields((prev) => [...prev, field])
+    setCategoryFields((prev) => [...prev, field]);
     setNewField({
       name: "",
       label: "",
       type: "text",
       required: false,
       options: [],
-    })
-    setIsAddingField(false)
+    });
+    setIsAddingField(false);
 
     toast({
       title: "Field Added",
       description: `Field "${newField.label}" has been added to the category.`,
-    })
-  }
+    });
+  };
 
   const handleRemoveField = (index: number) => {
-    setCategoryFields((prev) => prev.filter((_, i) => i !== index))
+    setCategoryFields((prev) => prev.filter((_, i) => i !== index));
     toast({
       title: "Field Removed",
       description: "Field has been removed from the category.",
-    })
-  }
+    });
+  };
 
   const handleEditCategory = (category: any) => {
-    setEditingCategory(category)
+    setEditingCategory(category);
     setEditCategoryData({
       name: category.name,
       label: category.label,
       description: category.description,
       icon: category.icon,
       color: category.color,
-    })
-    setEditCategoryFields([...category.fields])
-    setIsEditCategoryDialogOpen(true)
-  }
+    });
+    setEditCategoryFields([...category.categoryFields]);
+    setIsEditCategoryDialogOpen(true);
+  };
 
   const handleCreateCategory = async () => {
-    console.log("🚀 Starting category creation...")
-    console.log("Category data:", newCategoryData)
-    console.log("Category fields:", categoryFields)
-
+    // Validate essential fields
     if (!newCategoryData.name || !newCategoryData.label) {
       toast({
         title: "Missing Information",
         description: "Please provide both category name and label.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    // Combine default fields with custom fields
-    const allFields = [
-      { name: "title", label: "Title", type: "text", required: true },
-      { name: "description", label: "Description", type: "textarea", required: true },
-      ...categoryFields,
-    ]
-
-    console.log("All fields for category:", allFields)
+    const requestBody = {
+      action: "create",
+      name: newCategoryData.name,
+      label: newCategoryData.label,
+      description: newCategoryData.description,
+      icon: newCategoryData.icon || "Folder",
+      color:
+        newCategoryData.color || "bg-gray-50 text-gray-600 border-gray-200",
+      categoryFields: categoryFields.map((field) => ({
+        name: field.name,
+        label: field.label,
+        type: field.type,
+        options: field.options || [],
+        required: field.required || false,
+      })),
+    };
 
     try {
-      const requestBody = {
-        action: "create",
-        category: {
-          id: newCategoryData.name,
-          name: newCategoryData.name,
-          label: newCategoryData.label,
-          description: newCategoryData.description,
-          icon: newCategoryData.icon, // Make sure this is included
-          color: newCategoryData.color || "bg-gray-50 text-gray-600 border-gray-200",
-          fields: allFields,
-        },
-      }
-
-      console.log("📤 Sending request:", requestBody)
-
       const response = await fetch("/api/categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
-      })
+      });
 
-      console.log("📥 Response status:", response.status)
-      const result = await response.json()
-      console.log("📥 Response data:", result)
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Category Created",
           description: `${newCategoryData.label} category has been created successfully.`,
-        })
+        });
 
         // Reset form
         setNewCategoryData({
@@ -966,28 +1224,28 @@ export default function AdminPage() {
           description: "",
           icon: "Folder",
           color: "bg-gray-50 text-gray-600 border-gray-200",
-        })
-        setCategoryFields([])
+        });
+        setCategoryFields([]);
 
         // Refresh data
-        await fetchCustomCategories()
-        await loadCategoryCounts()
+        await fetchCustomCategories?.();
+        await loadCategoryCounts?.();
       } else {
-        throw new Error(result.message || "Unknown error occurred")
+        throw new Error(result.message || "Unknown error occurred");
       }
-    } catch (error) {
-      console.error("❌ Error creating category:", error)
+    } catch (error: any) {
+      console.error("❌ Error creating category:", error);
       toast({
         title: "Error",
         description: `Failed to create category: ${error.message}`,
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
-  const handleUpdateCategory = async () => {
-    if (!editingCategory) return
-
+  const handleUpdateCategory = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingCategory) return;
     try {
       const response = await fetch("/api/categories", {
         method: "POST",
@@ -1002,35 +1260,39 @@ export default function AdminPage() {
             fields: editCategoryFields,
           },
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Category Updated",
           description: "Category has been updated successfully.",
-        })
+        });
 
-        setIsEditCategoryDialogOpen(false)
-        setEditingCategory(null)
-        await fetchCustomCategories()
-        await loadCategoryCounts()
+        setIsEditCategoryDialogOpen(false);
+        setEditingCategory(null);
+        await fetchCustomCategories();
+        await loadCategoryCounts();
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
-      console.error("Error updating category:", error)
+      console.error("Error updating category:", error);
       toast({
         title: "Error",
         description: "Failed to update category. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleDeleteCustomCategory = async (categoryId: string) => {
-    if (confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete this category? This action cannot be undone."
+      )
+    ) {
       try {
         const response = await fetch("/api/categories", {
           method: "POST",
@@ -1041,30 +1303,30 @@ export default function AdminPage() {
             action: "delete",
             categoryId,
           }),
-        })
+        });
 
-        const result = await response.json()
+        const result = await response.json();
 
         if (result.success) {
           toast({
             title: "Category Deleted",
             description: "Category has been deleted successfully.",
-          })
+          });
 
-          await fetchCustomCategories()
-          await loadCategoryCounts()
+          await fetchCustomCategories();
+          await loadCategoryCounts();
         } else {
-          throw new Error(result.message)
+          throw new Error(result.message);
         }
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to delete category. Please try again.",
           variant: "destructive",
-        })
+        });
       }
     }
-  }
+  };
 
   const handleApproveResource = async (resourceId: string) => {
     try {
@@ -1077,29 +1339,30 @@ export default function AdminPage() {
           action: "approve",
           resourceId,
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Resource Approved",
-          description: "The resource has been approved and added to the system.",
-        })
+          description:
+            "The resource has been approved and added to the system.",
+        });
 
-        setPendingResources((prev) => prev.filter((r) => r.id !== resourceId))
-        await loadCategoryCounts()
+        setPendingResources((prev) => prev.filter((r) => r.id !== resourceId));
+        await loadCategoryCounts();
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to approve resource. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleRejectResource = async (resourceId: string) => {
     try {
@@ -1112,28 +1375,28 @@ export default function AdminPage() {
           action: "reject",
           resourceId,
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Resource Rejected",
           description: "The resource has been rejected.",
-        })
+        });
 
-        setPendingResources((prev) => prev.filter((r) => r.id !== resourceId))
+        setPendingResources((prev) => prev.filter((r) => r.id !== resourceId));
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to reject resource. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleMarkFeedbackReviewed = async (feedbackId: string) => {
     try {
@@ -1145,30 +1408,34 @@ export default function AdminPage() {
         body: JSON.stringify({
           action: "update_status",
           feedbackId,
-          status: "reviewed",
+          status: "REVIEWED",
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Feedback Updated",
           description: "Feedback has been marked as reviewed.",
-        })
+        });
 
-        setFeedbackList((prev) => prev.map((f) => (f.id === feedbackId ? { ...f, status: "reviewed" } : f)))
+        setFeedbackList((prev) =>
+          prev.map((f) =>
+            f.id === feedbackId ? { ...f, status: "REVIEWED" } : f
+          )
+        );
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update feedback status. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleMarkFeedbackResolved = async (feedbackId: string) => {
     try {
@@ -1180,43 +1447,187 @@ export default function AdminPage() {
         body: JSON.stringify({
           action: "update_status",
           feedbackId,
-          status: "resolved",
+          status: "RESOLVED",
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Feedback Resolved",
           description: "Feedback has been marked as resolved.",
-        })
+        });
 
-        setFeedbackList((prev) => prev.map((f) => (f.id === feedbackId ? { ...f, status: "resolved" } : f)))
+        setFeedbackList((prev) =>
+          prev.map((f) =>
+            f.id === feedbackId ? { ...f, status: "RESOLVED" } : f
+          )
+        );
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update feedback status. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
-  const fetchUsers = () => {
-    const allUsers = getUsers()
-    setUsers(allUsers)
-  }
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      if (res.ok && data.users) {
+        setUsers(data.users);
+      } else {
+        console.error("Failed to fetch users:", data.error || "Unknown error");
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const handleResourceAdminNote = async (
+    e: React.FormEvent<HTMLFormElement>,
+    selectedResource: PendingResource
+  ) => {
+    e.preventDefault();
+
+    // Approve the resource and add admin notes
+    try {
+      const response = await fetch("/api/pending-resources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "approve",
+          resourceId: selectedResource.id,
+          adminNotes,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast({
+          title: "Resource Approved",
+          description:
+            "The resource has been approved and added to the system.",
+        });
+        setPendingResources((prev) =>
+          prev.filter((r) => r.id !== selectedResource.id)
+        );
+        await loadCategoryCounts();
+        setIsReviewDialogOpen(false);
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve resource. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUserStatusUpdate = async (
+    userId: string,
+    newStatus: "active" | "inactive"
+  ) => {
+    console.log(`Updating user ${userId} status to ${newStatus}`);
+    try {
+      const response = await fetch("/api/users", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: userId,
+          status: newStatus,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "User Status Updated",
+          description: `User status has been updated to ${newStatus}.`,
+        });
+        setUsers((prev) =>
+          prev.map((user) =>
+            user.id === userId
+              ? { ...user, isActive: newStatus === "active" ? true : false }
+              : user
+          )
+        );
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update user status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this user? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+    try {
+      const response = await fetch("/api/users", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: userId }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "User Deleted",
+          description: "The user has been deleted successfully.",
+        });
+        setUsers((prev) => prev.filter((user) => user.id !== userId));
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!isAuthenticated) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
-  const formFields = getFormFields(selectedCategory)
-  const editFormFields = editingItem ? getFormFields(editingItem.category) : []
-  const pendingCount = pendingResources.filter((r) => r.status === "pending").length
+  const formFields = selectedCategory ? getFormFields(selectedCategory) : [];
+
+  const editFormFields = editingItem ? getFormFields(editingItem.category) : [];
+  const pendingCount = pendingResources.filter(
+    (r) => r.status === "pending"
+  ).length;
+  const getEditFieldValue = (name: string) => {
+    return (
+      editFormData?.ResourceField?.find((f) => f.name === name)?.value || ""
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1230,7 +1641,9 @@ export default function AdminPage() {
                 Back to Home
               </Link>
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Admin Panel
+            </h1>
             <p className="text-gray-600">Manage community resources</p>
           </div>
           <div className="flex gap-2">
@@ -1240,14 +1653,8 @@ export default function AdminPage() {
             <Button
               variant="outline"
               onClick={() => {
-                console.log("🔍 Debug info:")
-                console.log("Custom categories:", customCategories)
-                console.log("LocalStorage customCategories:", localStorage.getItem("customCategories"))
-                console.log("Current data:", currentData)
-                console.log("Category counts:", categoryCounts)
-
                 // Try to reload categories
-                fetchCustomCategories()
+                fetchCustomCategories();
               }}
             >
               Debug Categories
@@ -1262,7 +1669,11 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="add">Add Resources</TabsTrigger>
             <TabsTrigger value="manage">Manage Resources</TabsTrigger>
@@ -1270,16 +1681,20 @@ export default function AdminPage() {
             <TabsTrigger value="pending" className="relative">
               Pending Approvals
               {pendingCount > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 text-xs">
+                <Badge
+                  variant="destructive"
+                  className="ml-2 h-5 w-5 p-0 text-xs"
+                >
                   {pendingCount}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="feedback" className="relative">
               User Feedback
-              {feedbackList.filter((f) => f.status === "pending").length > 0 && (
+              {feedbackList.filter((f) => f.status === "PENDING").length >
+                0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
-                  {feedbackList.filter((f) => f.status === "pending").length}
+                  {feedbackList.filter((f) => f.status === "PENDING").length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -1310,44 +1725,59 @@ export default function AdminPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <Select
+                      value={selectedCategory}
+                      onValueChange={setSelectedCategory}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
-                          <SelectItem key={category.value} value={category.value}>
-                            {category.label} ({categoryCounts[category.value] || 0} items)
+                          <SelectItem
+                            key={category.value}
+                            value={category.value}
+                          >
+                            {category.label} (
+                            {categoryCounts[category.value] || 0} items)
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {selectedCategory && (
+                  {selectedCategory && formFields.length > 0 && (
                     <>
                       {formFields.map((field) => (
                         <div key={field.name} className="space-y-2">
                           <Label htmlFor={field.name}>
                             {field.label}
-                            {field.required && <span className="text-red-500 ml-1">*</span>}
+                            {field.required && (
+                              <span className="text-red-500 ml-1">*</span>
+                            )}
                           </Label>
 
-                          {field.type === "textarea" ? (
+                          {field.type === "TEXTAREA" ? (
                             <Textarea
                               id={field.name}
                               value={formData[field.name] || ""}
-                              onChange={(e) => handleInputChange(field.name, e.target.value)}
+                              onChange={(e) =>
+                                handleInputChange(field.name, e.target.value)
+                              }
                               required={field.required}
                               rows={3}
                             />
-                          ) : field.type === "select" ? (
+                          ) : field.type === "SELECT" ? (
                             <Select
                               value={formData[field.name] || ""}
-                              onValueChange={(value) => handleInputChange(field.name, value)}
+                              onValueChange={(value) =>
+                                handleInputChange(field.name, value)
+                              }
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                                <SelectValue
+                                  placeholder={`Select ${field.label.toLowerCase()}`}
+                                />
                               </SelectTrigger>
                               <SelectContent>
                                 {field.options?.map((option) => (
@@ -1362,7 +1792,9 @@ export default function AdminPage() {
                               id={field.name}
                               type={field.type}
                               value={formData[field.name] || ""}
-                              onChange={(e) => handleInputChange(field.name, e.target.value)}
+                              onChange={(e) =>
+                                handleInputChange(field.name, e.target.value)
+                              }
                               required={field.required}
                             />
                           )}
@@ -1384,15 +1816,21 @@ export default function AdminPage() {
           <TabsContent value="manage">
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="manage-category">Select Category to Manage</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Label htmlFor="manage-category">
+                  Select Category to Manage
+                </Label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                >
                   <SelectTrigger className="max-w-md">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
                       <SelectItem key={category.value} value={category.value}>
-                        {category.label} ({categoryCounts[category.value] || 0} items)
+                        {category.label} ({categoryCounts[category.value] || 0}{" "}
+                        items)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1402,46 +1840,64 @@ export default function AdminPage() {
               {selectedCategory && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Manage {categories.find((c) => c.value === selectedCategory)?.label}</CardTitle>
+                    <CardTitle>
+                      Manage{" "}
+                      {
+                        categories.find((c) => c.value === selectedCategory)
+                          ?.label
+                      }
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {getCurrentCategoryData(selectedCategory).map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                        >
-                          <div className="flex-1">
-                            <h3 className="font-medium text-gray-900">{getItemDisplayName(item, selectedCategory)}</h3>
-                            <p className="text-sm text-gray-500">
-                              {selectedCategory === "camps" && `Contact: ${item.contactPerson}`}
-                              {selectedCategory === "schools" && `Location: ${item.location}`}
-                              {selectedCategory === "medical-supplies" && `Contact: ${item.contact}`}
-                              {selectedCategory === "hamaspik-programs" && `Location: ${item.location}`}
-                              {selectedCategory === "contracted-programs" && `Type: ${item.programType}`}
-                              {selectedCategory === "perks" && item.description}
-                            </p>
+                      {getCurrentCategoryData(selectedCategory).map(
+                        (item: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                          >
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                {getItemDisplayName(item, selectedCategory)}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                {selectedCategory === "camps" &&
+                                  `Contact: ${item.contactPerson}`}
+                                {selectedCategory === "schools" &&
+                                  `Location: ${item.location}`}
+                                {selectedCategory === "medical-supplies" &&
+                                  `Contact: ${item.contact}`}
+                                {selectedCategory === "hamaspik-programs" &&
+                                  `Location: ${item.location}`}
+                                {selectedCategory === "contracted-programs" &&
+                                  `Type: ${item.programType}`}
+                                {selectedCategory === "perks" &&
+                                  item.description}
+                              </p>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleEdit(selectedCategory, item, index)
+                                }
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  handleDelete(selectedCategory, index, item)
+                                }
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(selectedCategory, item, index)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() =>
-                                handleDelete(selectedCategory, index, getItemDisplayName(item, selectedCategory))
-                              }
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1464,7 +1920,12 @@ export default function AdminPage() {
                         <Input
                           id="categoryName"
                           value={newCategoryData.name}
-                          onChange={(e) => setNewCategoryData((prev) => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) =>
+                            setNewCategoryData((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           placeholder="e.g., therapy-services"
                           required
                         />
@@ -1474,7 +1935,12 @@ export default function AdminPage() {
                         <Input
                           id="categoryLabel"
                           value={newCategoryData.label}
-                          onChange={(e) => setNewCategoryData((prev) => ({ ...prev, label: e.target.value }))}
+                          onChange={(e) =>
+                            setNewCategoryData((prev) => ({
+                              ...prev,
+                              label: e.target.value,
+                            }))
+                          }
                           placeholder="e.g., Therapy Services"
                           required
                         />
@@ -1485,7 +1951,12 @@ export default function AdminPage() {
                       <Textarea
                         id="categoryDescription"
                         value={newCategoryData.description}
-                        onChange={(e) => setNewCategoryData((prev) => ({ ...prev, description: e.target.value }))}
+                        onChange={(e) =>
+                          setNewCategoryData((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
                         placeholder="Brief description of this category"
                         rows={2}
                       />
@@ -1495,15 +1966,49 @@ export default function AdminPage() {
                       <Label htmlFor="categoryIcon">Category Icon</Label>
                       <IconSelector
                         selectedIcon={newCategoryData.icon}
-                        onIconSelect={(iconName) => setNewCategoryData((prev) => ({ ...prev, icon: iconName }))}
+                        onIconSelect={(iconName) =>
+                          setNewCategoryData((prev) => ({
+                            ...prev,
+                            icon: iconName,
+                          }))
+                        }
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="categoryColor">Category Color</Label>
+                      <Select
+                        value={newField.type}
+                        onValueChange={(value) =>
+                          setNewCategoryData((prev) => ({
+                            ...prev,
+                            color: `bg-${value}-50 text-${value}-600 border-${value}-200`,
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a color" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="red">Red</SelectItem>
+                          <SelectItem value="green">Green</SelectItem>
+                          <SelectItem value="blue">Blue</SelectItem>
+                          <SelectItem value="black">Black</SelectItem>
+                          <SelectItem value="yellow">Yellow</SelectItem>
+                          <SelectItem value="orange">Orange</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Fields Management */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <Label>Category Fields</Label>
-                        <Button type="button" variant="outline" size="sm" onClick={() => setIsAddingField(true)}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsAddingField(true)}
+                        >
                           <Plus className="w-4 h-4 mr-2" />
                           Add Field
                         </Button>
@@ -1515,7 +2020,9 @@ export default function AdminPage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <span className="font-medium">Title</span>
-                              <span className="text-sm text-gray-500 ml-2">(Text, Required)</span>
+                              <span className="text-sm text-gray-500 ml-2">
+                                (Text, Required)
+                              </span>
                             </div>
                             <Badge variant="outline">Default</Badge>
                           </div>
@@ -1524,7 +2031,9 @@ export default function AdminPage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <span className="font-medium">Description</span>
-                              <span className="text-sm text-gray-500 ml-2">(Textarea, Required)</span>
+                              <span className="text-sm text-gray-500 ml-2">
+                                (Textarea, Required)
+                              </span>
                             </div>
                             <Badge variant="outline">Default</Badge>
                           </div>
@@ -1533,14 +2042,23 @@ export default function AdminPage() {
 
                       {/* Custom Fields */}
                       {categoryFields.map((field, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
                           <div>
                             <span className="font-medium">{field.label}</span>
                             <span className="text-sm text-gray-500 ml-2">
-                              ({field.type}, {field.required ? "Required" : "Optional"})
+                              ({field.type},{" "}
+                              {field.required ? "Required" : "Optional"})
                             </span>
                           </div>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveField(index)}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveField(index)}
+                          >
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
@@ -1556,7 +2074,12 @@ export default function AdminPage() {
                                 <Input
                                   id="fieldName"
                                   value={newField.name}
-                                  onChange={(e) => setNewField((prev) => ({ ...prev, name: e.target.value }))}
+                                  onChange={(e) =>
+                                    setNewField((prev) => ({
+                                      ...prev,
+                                      name: e.target.value,
+                                    }))
+                                  }
                                   placeholder="e.g., contactPhone"
                                 />
                               </div>
@@ -1565,7 +2088,12 @@ export default function AdminPage() {
                                 <Input
                                   id="fieldLabel"
                                   value={newField.label}
-                                  onChange={(e) => setNewField((prev) => ({ ...prev, label: e.target.value }))}
+                                  onChange={(e) =>
+                                    setNewField((prev) => ({
+                                      ...prev,
+                                      label: e.target.value,
+                                    }))
+                                  }
                                   placeholder="e.g., Contact Phone"
                                 />
                               </div>
@@ -1575,18 +2103,29 @@ export default function AdminPage() {
                                 <Label htmlFor="fieldType">Field Type</Label>
                                 <Select
                                   value={newField.type}
-                                  onChange={(value) => setNewField((prev) => ({ ...prev, type: value }))}
+                                  onValueChange={(value) =>
+                                    setNewField((prev) => ({
+                                      ...prev,
+                                      type: value,
+                                    }))
+                                  }
                                 >
                                   <SelectTrigger>
-                                    <SelectValue />
+                                    <SelectValue placeholder="Select a type" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="text">Text</SelectItem>
-                                    <SelectItem value="email">Email</SelectItem>
-                                    <SelectItem value="tel">Phone</SelectItem>
-                                    <SelectItem value="textarea">Textarea</SelectItem>
-                                    <SelectItem value="select">Select</SelectItem>
-                                    <SelectItem value="number">Number</SelectItem>
+                                    <SelectItem value="TEXT">Text</SelectItem>
+                                    <SelectItem value="EMAIL">Email</SelectItem>
+                                    <SelectItem value="PHONE">Phone</SelectItem>
+                                    <SelectItem value="TEXTAREA">
+                                      Textarea
+                                    </SelectItem>
+                                    <SelectItem value="SELECT">
+                                      Select
+                                    </SelectItem>
+                                    <SelectItem value="NUMBER">
+                                      Number
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -1595,32 +2134,45 @@ export default function AdminPage() {
                                   type="checkbox"
                                   id="fieldRequired"
                                   checked={newField.required}
-                                  onChange={(e) => setNewField((prev) => ({ ...prev, required: e.target.checked }))}
+                                  onChange={(e) =>
+                                    setNewField((prev) => ({
+                                      ...prev,
+                                      required: e.target.checked,
+                                    }))
+                                  }
                                 />
                                 <Label htmlFor="fieldRequired">Required</Label>
                               </div>
                             </div>
-                            {newField.type === "select" && (
+                            {newField.type === "SELECT" && (
                               <div>
-                                <Label htmlFor="fieldOptions">Options (comma-separated)</Label>
+                                <Label htmlFor="fieldOptions">
+                                  Options (comma-separated)
+                                </Label>
                                 <Input
                                   id="fieldOptions"
-                                  value={newField.options.join(", ")}
-                                  onChange={(e) =>
+                                  value={optionsInput}
+                                  onChange={(e) => {
+                                    const input = e.target.value;
+                                    setOptionsInput(input); // allow comma input
                                     setNewField((prev) => ({
                                       ...prev,
-                                      options: e.target.value
+                                      options: input
                                         .split(",")
                                         .map((opt) => opt.trim())
                                         .filter((opt) => opt),
-                                    }))
-                                  }
+                                    }));
+                                  }}
                                   placeholder="Option 1, Option 2, Option 3"
                                 />
                               </div>
                             )}
                             <div className="flex space-x-2">
-                              <Button type="button" size="sm" onClick={handleAddField}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleAddField}
+                              >
                                 Add Field
                               </Button>
                               <Button
@@ -1628,14 +2180,14 @@ export default function AdminPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  setIsAddingField(false)
+                                  setIsAddingField(false);
                                   setNewField({
                                     name: "",
                                     label: "",
                                     type: "text",
                                     required: false,
                                     options: [],
-                                  })
+                                  });
                                 }}
                               >
                                 Cancel
@@ -1666,23 +2218,39 @@ export default function AdminPage() {
                         className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                       >
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{category.label}</h3>
-                          <p className="text-sm text-gray-500">{category.description}</p>
+                          <h3 className="font-medium text-gray-900">
+                            {category.label}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {category.description}
+                          </p>
                           <div className="flex items-center mt-2 space-x-4">
-                            <Badge variant="secondary">{categoryCounts[category.name] || 0} items</Badge>
-                            <Badge variant="outline">{category.fields?.length || 0} fields</Badge>
-                            {category.isDefault && <Badge variant="outline">Default</Badge>}
+                            <Badge variant="secondary">
+                              {categoryCounts[category.name] || 0} items
+                            </Badge>
+                            <Badge variant="outline">
+                              {category.fields?.length || 0} fields
+                            </Badge>
+                            {category.isDefault && (
+                              <Badge variant="outline">Default</Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEditCategory(category)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditCategory(category)}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                           {!category.isDefault && (
                             <Button
                               variant="destructive"
                               size="sm"
-                              onClick={() => handleDeleteCustomCategory(category.id)}
+                              onClick={() =>
+                                handleDeleteCustomCategory(category.id)
+                              }
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -1715,29 +2283,60 @@ export default function AdminPage() {
                     {pendingResources
                       .filter((resource) => resource.status === "pending")
                       .map((resource) => (
-                        <div key={resource.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div
+                          key={resource.id}
+                          className="border rounded-lg p-4 hover:bg-gray-50"
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h3 className="font-medium text-gray-900">{getResourceDisplayName(resource)}</h3>
+                              <h3 className="font-medium text-gray-900">
+                                {getResourceDisplayName(resource)}
+                              </h3>
                               <p className="text-sm text-gray-500 mb-2">
-                                Category: {categories.find((c) => c.value === resource.category)?.label}
+                                Category:{" "}
+                                {
+                                  categories.find(
+                                    (c) => c.value === resource.category
+                                  )?.label
+                                }
                               </p>
                               <p className="text-xs text-gray-400">
-                                Submitted: {new Date(resource.submittedAt).toLocaleDateString()}
+                                Submitted:{" "}
+                                {new Date(
+                                  resource.submittedAt
+                                ).toLocaleDateString()}
                               </p>
                               <div className="mt-3 p-3 bg-gray-50 rounded text-sm">
                                 <strong>Resource Details:</strong>
-                                <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(resource.data, null, 2)}</pre>
+                                <pre className="mt-1 whitespace-pre-wrap">
+                                  {JSON.stringify(resource.data, null, 2)}
+                                </pre>
                               </div>
                             </div>
                             <div className="flex space-x-2 ml-4">
-                              <Button variant="default" size="sm" onClick={() => handleApproveResource(resource.id)}>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() =>
+                                  handleApproveResource(resource.id)
+                                }
+                              >
                                 Approve
                               </Button>
-                              <Button variant="destructive" size="sm" onClick={() => handleRejectResource(resource.id)}>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  handleRejectResource(resource.id)
+                                }
+                              >
                                 Reject
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => openReviewDialog(resource)}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openReviewDialog(resource)}
+                              >
                                 Review
                               </Button>
                             </div>
@@ -1751,15 +2350,24 @@ export default function AdminPage() {
                   </div>
                 )}
                 {/* Debug section - remove this after testing */}
-                {process.env.NODE_ENV === "development" && (
+                {/* {process.env.NODE_ENV === "development" && (
                   <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-                    <h3 className="font-bold">Debug: Pending Resources ({pendingResources.length})</h3>
-                    <pre className="text-xs mt-2">{JSON.stringify(pendingResources, null, 2)}</pre>
-                    <Button onClick={fetchPendingResources} variant="outline" size="sm" className="mt-2">
+                    <h3 className="font-bold">
+                      Debug: Pending Resources ({pendingResources.length})
+                    </h3>
+                    <pre className="text-xs mt-2">
+                      {JSON.stringify(pendingResources, null, 2)}
+                    </pre>
+                    <Button
+                      onClick={fetchPendingResources}
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                    >
                       Refresh Pending Resources
                     </Button>
                   </div>
-                )}
+                )} */}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1770,9 +2378,14 @@ export default function AdminPage() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   User Feedback
-                  {feedbackList.filter((f) => f.status === "pending").length > 0 && (
+                  {feedbackList.filter((f) => f.status === "PENDING").length >
+                    0 && (
                     <Badge variant="secondary" className="ml-2">
-                      {feedbackList.filter((f) => f.status === "pending").length} new
+                      {
+                        feedbackList.filter((f) => f.status === "PENDING")
+                          .length
+                      }{" "}
+                      new
                     </Badge>
                   )}
                 </CardTitle>
@@ -1781,43 +2394,64 @@ export default function AdminPage() {
                 {feedbackList.length > 0 ? (
                   <div className="space-y-4">
                     {feedbackList.map((feedback) => (
-                      <div key={feedback.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div
+                        key={feedback.id}
+                        className="border rounded-lg p-4 hover:bg-gray-50"
+                      >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <h3 className="font-medium text-gray-900">{feedback.resourceName}</h3>
+                              <h3 className="font-medium text-gray-900">
+                                {feedback.resourceName}
+                              </h3>
                               <Badge
-                                variant={feedback.status === "pending" ? "secondary" : "outline"}
+                                variant={
+                                  feedback.status === "PENDING"
+                                    ? "secondary"
+                                    : "outline"
+                                }
                                 className="text-xs"
                               >
                                 {feedback.status}
                               </Badge>
                             </div>
                             <p className="text-sm text-gray-500 mb-2">
-                              Category: {categories.find((c) => c.value === feedback.category)?.label}
+                              Category:{" "}
+                              {
+                                categories.find(
+                                  (c) => c.value === feedback.category
+                                )?.label
+                              }
                             </p>
                             <div className="bg-blue-50 p-3 rounded text-sm mb-3">
                               <strong>Feedback:</strong>
                               <p className="mt-1">{feedback.feedback}</p>
                             </div>
                             <p className="text-xs text-gray-400">
-                              Submitted: {new Date(feedback.submittedAt).toLocaleDateString()}
+                              Submitted:{" "}
+                              {new Date(
+                                feedback.submittedAt
+                              ).toLocaleDateString()}
                             </p>
                           </div>
                           <div className="flex space-x-2 ml-4">
-                            {feedback.status === "pending" && (
+                            {feedback.status === "PENDING" && (
                               <>
                                 <Button
                                   variant="default"
                                   size="sm"
-                                  onClick={() => handleMarkFeedbackReviewed(feedback.id)}
+                                  onClick={() =>
+                                    handleMarkFeedbackReviewed(feedback.id)
+                                  }
                                 >
                                   Mark Reviewed
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleMarkFeedbackResolved(feedback.id)}
+                                  onClick={() =>
+                                    handleMarkFeedbackResolved(feedback.id)
+                                  }
                                 >
                                   Mark Resolved
                                 </Button>
@@ -1856,17 +2490,23 @@ export default function AdminPage() {
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                     >
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{user.email}</h3>
+                        <h3 className="font-medium text-gray-900">
+                          {user.email}
+                        </h3>
                         <div className="flex items-center space-x-4 mt-1">
                           <p className="text-sm text-gray-500">
-                            Created: {new Date(user.createdAt).toLocaleDateString()}
+                            Created:{" "}
+                            {new Date(user.createdAt).toLocaleDateString()}
                           </p>
                           {user.lastLogin && (
                             <p className="text-sm text-gray-500">
-                              Last login: {new Date(user.lastLogin).toLocaleDateString()}
+                              Last login:{" "}
+                              {new Date(user.lastLogin).toLocaleDateString()}
                             </p>
                           )}
-                          <Badge variant={user.isActive ? "default" : "secondary"}>
+                          <Badge
+                            variant={user.isActive ? "default" : "secondary"}
+                          >
                             {user.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </div>
@@ -1875,17 +2515,12 @@ export default function AdminPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            const updatedUser = { ...user, isActive: !user.isActive }
-                            const success = updateUser(updatedUser)
-                            if (success) {
-                              fetchUsers()
-                              toast({
-                                title: "User Updated",
-                                description: `${user.email} is now ${user.isActive ? "deactivated" : "activated"}.`,
-                              })
-                            }
-                          }}
+                          onClick={() =>
+                            handleUserStatusUpdate(
+                              user.id,
+                              user.isActive ? "inactive" : "active"
+                            )
+                          }
                         >
                           {user.isActive ? "Deactivate" : "Activate"}
                         </Button>
@@ -1893,18 +2528,7 @@ export default function AdminPage() {
                           variant="destructive"
                           size="sm"
                           onClick={() => {
-                            if (
-                              confirm(`Are you sure you want to delete ${user.email}? This action cannot be undone.`)
-                            ) {
-                              const success = deleteUser(user.id)
-                              if (success) {
-                                fetchUsers()
-                                toast({
-                                  title: "User Deleted",
-                                  description: `${user.email} has been removed.`,
-                                })
-                              }
-                            }
+                            handleDeleteUser(user.id);
                           }}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1939,10 +2563,17 @@ export default function AdminPage() {
                       id="adminEmail"
                       type="email"
                       value={adminSettings.adminEmail}
-                      onChange={(e) => setAdminSettings((prev) => ({ ...prev, adminEmail: e.target.value }))}
+                      onChange={(e) =>
+                        setAdminSettings((prev) => ({
+                          ...prev,
+                          adminEmail: e.target.value,
+                        }))
+                      }
                       placeholder="admin@example.com"
                     />
-                    <p className="text-sm text-gray-500">This email will receive notifications for:</p>
+                    <p className="text-sm text-gray-500">
+                      This email will receive notifications for:
+                    </p>
                     <ul className="text-sm text-gray-500 list-disc list-inside ml-4 space-y-1">
                       <li>New resources submitted by users</li>
                       <li>User feedback and suggestions</li>
@@ -1969,13 +2600,19 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
 
-        {/* Edit Dialog */}
+        {/* Edit Dialog For Manage resource*/}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
-                Edit {editingItem && getItemDisplayName(editingItem, editingItem.category)}
-                <Button variant="ghost" size="sm" onClick={() => setIsEditDialogOpen(false)}>
+                Edit{" "}
+                {editingItem &&
+                  getItemDisplayName(editingItem, editingItem.category)}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
                   <X className="w-4 h-4" />
                 </Button>
               </DialogTitle>
@@ -1987,24 +2624,36 @@ export default function AdminPage() {
                   <div key={field.name} className="space-y-2">
                     <Label htmlFor={`edit-${field.name}`}>
                       {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                      {field.required && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
                     </Label>
 
-                    {field.type === "textarea" ? (
+                    {field.type === "TEXTAREA" ? (
                       <Textarea
                         id={`edit-${field.name}`}
-                        value={editFormData[field.name] || ""}
-                        onChange={(e) => handleEditInputChange(field.name, e.target.value)}
+                        defaultValue={getEditFieldValue(field.name)}
+                        onChange={(e) =>
+                          handleEditInputChange(
+                            field.name,
+                            e.target.value,
+                            field.id
+                          )
+                        }
                         required={field.required}
                         rows={3}
                       />
-                    ) : field.type === "select" ? (
+                    ) : field.type === "SELECT" ? (
                       <Select
-                        value={editFormData[field.name] || ""}
-                        onValueChange={(value) => handleEditInputChange(field.name, value)}
+                        value={getEditFieldValue(field.name)}
+                        onValueChange={(value) =>
+                          handleEditInputChange(field.name, value, field.id)
+                        }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                          <SelectValue
+                            placeholder={`Select ${field.label.toLowerCase()}`}
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {field.options?.map((option) => (
@@ -2018,8 +2667,14 @@ export default function AdminPage() {
                       <Input
                         id={`edit-${field.name}`}
                         type={field.type}
-                        value={editFormData[field.name] || ""}
-                        onChange={(e) => handleEditInputChange(field.name, e.target.value)}
+                        defaultValue={getEditFieldValue(field.name)}
+                        onChange={(e) =>
+                          handleEditInputChange(
+                            field.name,
+                            e.target.value,
+                            field.id
+                          )
+                        }
                         required={field.required}
                       />
                     )}
@@ -2031,7 +2686,11 @@ export default function AdminPage() {
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -2045,25 +2704,44 @@ export default function AdminPage() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Review Resource</DialogTitle>
-              <Button variant="ghost" onClick={() => setIsReviewDialogOpen(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => setIsReviewDialogOpen(false)}
+              >
                 <X className="w-4 h-4" />
               </Button>
             </DialogHeader>
             {selectedResource && (
-              <>
+              <form
+                onSubmit={(e) => handleResourceAdminNote(e, selectedResource)}
+                className="space-y-4"
+              >
                 <div className="mb-4">
-                  <h3 className="font-medium text-gray-900">{getResourceDisplayName(selectedResource)}</h3>
+                  <h3 className="font-medium text-gray-900">
+                    {getResourceDisplayName(selectedResource)}
+                  </h3>
                   <p className="text-sm text-gray-500">
-                    Category: {categories.find((c) => c.value === selectedResource.category)?.label}
+                    Category:{" "}
+                    {
+                      categories.find(
+                        (c) => c.value === selectedResource.category
+                      )?.label
+                    }
                   </p>
                   <p className="text-xs text-gray-400">
-                    Submitted: {new Date(selectedResource.submittedAt).toLocaleDateString()}
+                    Submitted:{" "}
+                    {new Date(
+                      selectedResource.submittedAt
+                    ).toLocaleDateString()}
                   </p>
                   <div className="mt-3 p-3 bg-gray-50 rounded text-sm">
                     <strong>Resource Details:</strong>
-                    <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(selectedResource.data, null, 2)}</pre>
+                    <pre className="mt-1 whitespace-pre-wrap">
+                      {JSON.stringify(selectedResource.data, null, 2)}
+                    </pre>
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="adminNotes">Admin Notes</Label>
                   <Textarea
@@ -2074,61 +2752,34 @@ export default function AdminPage() {
                     rows={3}
                   />
                 </div>
+
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsReviewDialogOpen(false)}>
-                    Cancel
-                  </Button>
                   <Button
                     type="button"
-                    onClick={async () => {
-                      // Approve the resource and add admin notes
-                      try {
-                        const response = await fetch("/api/pending-resources", {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify({
-                            action: "approve",
-                            resourceId: selectedResource.id,
-                            adminNotes,
-                          }),
-                        })
-                        const result = await response.json()
-                        if (result.success) {
-                          toast({
-                            title: "Resource Approved",
-                            description: "The resource has been approved and added to the system.",
-                          })
-                          setPendingResources((prev) => prev.filter((r) => r.id !== selectedResource.id))
-                          await loadCategoryCounts()
-                          setIsReviewDialogOpen(false)
-                        } else {
-                          throw new Error(result.message)
-                        }
-                      } catch (error) {
-                        toast({
-                          title: "Error",
-                          description: "Failed to approve resource. Please try again.",
-                          variant: "destructive",
-                        })
-                      }
-                    }}
+                    variant="outline"
+                    onClick={() => setIsReviewDialogOpen(false)}
                   >
-                    Approve
+                    Cancel
                   </Button>
+                  <Button type="submit">Approve</Button>
                 </div>
-              </>
+              </form>
             )}
           </DialogContent>
         </Dialog>
 
         {/* Edit Category Dialog */}
-        <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
+        <Dialog
+          open={isEditCategoryDialogOpen}
+          onOpenChange={setIsEditCategoryDialogOpen}
+        >
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Category</DialogTitle>
-              <Button variant="ghost" onClick={() => setIsEditCategoryDialogOpen(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => setIsEditCategoryDialogOpen(false)}
+              >
                 <X className="w-4 h-4" />
               </Button>
             </DialogHeader>
@@ -2139,7 +2790,12 @@ export default function AdminPage() {
                   <Input
                     id="editCategoryName"
                     value={editCategoryData.name}
-                    onChange={(e) => setEditCategoryData((prev) => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setEditCategoryData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                     placeholder="e.g., therapy-services"
                     required
                   />
@@ -2149,7 +2805,12 @@ export default function AdminPage() {
                   <Input
                     id="editCategoryLabel"
                     value={editCategoryData.label}
-                    onChange={(e) => setEditCategoryData((prev) => ({ ...prev, label: e.target.value }))}
+                    onChange={(e) =>
+                      setEditCategoryData((prev) => ({
+                        ...prev,
+                        label: e.target.value,
+                      }))
+                    }
                     placeholder="e.g., Therapy Services"
                     required
                   />
@@ -2159,7 +2820,12 @@ export default function AdminPage() {
                   <Textarea
                     id="editCategoryDescription"
                     value={editCategoryData.description}
-                    onChange={(e) => setEditCategoryData((prev) => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setEditCategoryData((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
                     placeholder="Brief description of this category"
                     rows={2}
                   />
@@ -2169,11 +2835,15 @@ export default function AdminPage() {
                     <Label>Category Fields</Label>
                   </div>
                   {editCategoryFields.map((field, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div>
                         <span className="font-medium">{field.label}</span>
                         <span className="text-sm text-gray-500 ml-2">
-                          ({field.type}, {field.required ? "Required" : "Optional"})
+                          ({field.type},{" "}
+                          {field.required ? "Required" : "Optional"})
                         </span>
                       </div>
                       <Button
@@ -2181,11 +2851,14 @@ export default function AdminPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setEditCategoryFields((prev) => prev.filter((_, i) => i !== index))
+                          setEditCategoryFields((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
                           toast({
                             title: "Field Removed",
-                            description: "Field has been removed from the category.",
-                          })
+                            description:
+                              "Field has been removed from the category.",
+                          });
                         }}
                       >
                         <X className="w-4 h-4" />
@@ -2198,7 +2871,11 @@ export default function AdminPage() {
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setIsEditCategoryDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditCategoryDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -2208,5 +2885,5 @@ export default function AdminPage() {
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

@@ -59,74 +59,92 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2)
 }
 
-export function createUser(email: string, password: string): { success: boolean; message: string; user?: User } {
+export async function createUser(
+  email: string,
+  password: string
+): Promise<{ success: boolean; message: string; user?: any }> {
+  // Run on client-side only
   if (typeof window === "undefined") {
-    return { success: false, message: "Cannot create user on server side" }
+    return { success: false, message: "Cannot create user on server side" };
   }
 
   // Validate email
   if (!email || !/\S+@\S+\.\S+/.test(email)) {
-    return { success: false, message: "Please provide a valid email address" }
+    return { success: false, message: "Please provide a valid email address" };
   }
 
   // Validate password
-  const passwordValidation = validatePassword(password)
+  const passwordValidation = validatePassword(password);
   if (!passwordValidation.isValid) {
-    return { success: false, message: passwordValidation.errors.join(". ") }
+    return {
+      success: false,
+      message: passwordValidation.errors.join(". "),
+    };
   }
 
-  const users = getUsers()
+  try {
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-  // Check if user already exists
-  if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
-    return { success: false, message: "A user with this email already exists" }
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { success: false, message: data.error || "Registration failed" };
+    }
+
+    return {
+      success: true,
+      message: data.message,
+      user: { id: data.userId, email }, // return user ID & email for localStorage
+    };
+  } catch (error) {
+    console.error("Error calling /api/register:", error);
+    return { success: false, message: "Something went wrong" };
   }
-
-  // Create new user
-  const newUser: User = {
-    id: generateId(),
-    email: email.toLowerCase(),
-    password: password, // In a real app, this should be hashed
-    isActive: true,
-    isAdmin: users.length === 0, // First user is admin
-    createdAt: Date.now(),
-    lastLogin: null,
-  }
-
-  // Add user to storage
-  users.push(newUser)
-  saveUsers(users)
-
-  return { success: true, message: "User created successfully", user: newUser }
 }
 
-export function authenticateUser(email: string, password: string): { success: boolean; message: string; user?: User } {
+
+export async function authenticateUser(
+  email: string,
+  password: string
+): Promise<{ success: boolean; message: string; user?: { id: string; email: string } }> {
   if (typeof window === "undefined") {
-    return { success: false, message: "Cannot authenticate on server side" }
+    return { success: false, message: "Cannot authenticate on server side" };
   }
 
-  const users = getUsers()
-  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase())
-
-  if (!user) {
-    return { success: false, message: "Invalid email or password" }
+  if (!email || !password) {
+    return { success: false, message: "Email and password are required" };
   }
 
-  if (!user.isActive) {
-    return { success: false, message: "This account has been deactivated" }
+  try {
+    const res = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { success: false, message: data.error || "Login failed" };
+    }
+
+    return {
+      success: true,
+      message: data.message,
+      user: { id: data.userId, email: data.email },
+    };
+  } catch (error) {
+    console.error("Error authenticating:", error);
+    return { success: false, message: "Something went wrong" };
   }
-
-  if (user.password !== password) {
-    // In a real app, compare hashed passwords
-    return { success: false, message: "Invalid email or password" }
-  }
-
-  // Update last login time
-  user.lastLogin = Date.now()
-  saveUsers(users)
-
-  return { success: true, message: "Authentication successful", user }
 }
+
 
 export function getUserById(id: string): User | null {
   const users = getUsers()

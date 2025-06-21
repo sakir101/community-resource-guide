@@ -1,24 +1,33 @@
 // Utility functions for managing approved emails
 
-export function getApprovedEmails(): string[] {
-  if (typeof window === "undefined") return ["j8455008807@gmail.com"]
+export async function getApprovedEmails(): Promise<string[]> {
+
 
   try {
-    const emails = localStorage.getItem("approvedEmails")
-    const storedEmails = emails ? JSON.parse(emails) : []
+    // 1. Fetch from API
+    const response = await fetch("/api/emails", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-    // Always include the default admin email
-    const defaultEmails = ["j8455008807@gmail.com"]
+    const result = await response.json();
+    const apiEmails: string[] = result.emails || [];
 
-    // Combine and remove duplicates
-    const allEmails = [...new Set([...defaultEmails, ...storedEmails])]
 
-    return allEmails
+
+    // 3. Combine all emails and remove duplicates
+    const combined = [...apiEmails];
+    const uniqueEmails = [...new Set(combined.map((email) => email.toLowerCase().trim()))];
+
+    return uniqueEmails;
   } catch (error) {
-    console.error("Error loading approved emails:", error)
-    return ["j8455008807@gmail.com"]
+    console.error("Error loading approved emails:", error);
+    return [];
   }
 }
+
 
 export function saveApprovedEmails(emails: string[]): void {
   if (typeof window === "undefined") return
@@ -33,41 +42,70 @@ export function saveApprovedEmails(emails: string[]): void {
     // Combine and remove duplicates
     const allEmails = [...new Set([...defaultEmails, ...normalizedEmails])]
 
-    localStorage.setItem("approvedEmails", JSON.stringify(allEmails))
+
+
+    // localStorage.setItem("approvedEmails", JSON.stringify(allEmails))
   } catch (error) {
     console.error("Error saving approved emails:", error)
   }
 }
 
-export function addApprovedEmail(email: string): boolean {
+export async function addApprovedEmail(email: string): Promise<boolean> {
   if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    return false;
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  try {
+    const response = await fetch("/api/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: normalizedEmail }),
+    });
+
+    if (response.ok) {
+      return true;
+    } else {
+      const result = await response.json();
+      return false;
+    }
+  } catch (error) {
+    console.error("Error adding approved email:", error);
+    return false;
+  }
+}
+
+
+export async function removeApprovedEmail(email: string): Promise<boolean> {
+  const normalizedEmail = email.toLowerCase().trim()
+
+  try {
+    const res = await fetch("/api/emails", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: normalizedEmail }),
+    })
+
+    const data = await res.json()
+
+    if (res.ok && data.success) {
+      // Optionally update localStorage (if used)
+      const emails = await getApprovedEmails()
+      const filtered = emails.filter((e) => e !== normalizedEmail)
+      saveApprovedEmails(filtered)
+      return true
+    }
+
+    return false
+  } catch (error) {
+    console.error("Failed to remove email:", error)
     return false
   }
-
-  const emails = getApprovedEmails()
-  const normalizedEmail = email.toLowerCase().trim()
-
-  if (emails.includes(normalizedEmail)) {
-    return false // Already exists
-  }
-
-  emails.push(normalizedEmail)
-  saveApprovedEmails(emails)
-  return true
 }
 
-export function removeApprovedEmail(email: string): boolean {
-  const emails = getApprovedEmails()
-  const normalizedEmail = email.toLowerCase().trim()
-  const filteredEmails = emails.filter((e) => e !== normalizedEmail)
-
-  if (filteredEmails.length === emails.length) {
-    return false // Email wasn't in the list
-  }
-
-  saveApprovedEmails(filteredEmails)
-  return true
-}
 
 export function isEmailApproved(email: string): boolean {
   const emails = getApprovedEmails()
@@ -75,53 +113,60 @@ export function isEmailApproved(email: string): boolean {
   return emails.includes(normalizedEmail)
 }
 
-export function addMultipleApprovedEmails(emailsText: string): {
+export async function addMultipleApprovedEmails(emailsText: string): Promise<{
   added: string[]
   invalid: string[]
   duplicates: string[]
-} {
+}> {
   const result = {
     added: [] as string[],
     invalid: [] as string[],
     duplicates: [] as string[],
   }
 
-  const existingEmails = getApprovedEmails()
-  const emailsToAdd: string[] = []
-
-  // Split by commas, newlines, or spaces
   const emailCandidates = emailsText.split(/[\s,;]+/).filter(Boolean)
+  const normalizedEmails = emailCandidates.map(email => email.trim().toLowerCase())
 
-  for (const candidate of emailCandidates) {
-    const email = candidate.trim()
+  // Validate + deduplicate input
+  const validEmails: string[] = []
+  const seen = new Set<string>()
 
-    // Validate email format
+  for (const email of normalizedEmails) {
     if (!/\S+@\S+\.\S+/.test(email)) {
       result.invalid.push(email)
       continue
     }
 
-    const normalizedEmail = email.toLowerCase()
-
-    // Check for duplicates in existing list
-    if (existingEmails.includes(normalizedEmail)) {
+    if (seen.has(email)) {
       result.duplicates.push(email)
       continue
     }
 
-    // Check for duplicates in current batch
-    if (emailsToAdd.includes(normalizedEmail)) {
-      result.duplicates.push(email)
-      continue
-    }
-
-    emailsToAdd.push(normalizedEmail)
-    result.added.push(email)
+    seen.add(email)
+    validEmails.push(email)
   }
 
-  if (emailsToAdd.length > 0) {
-    saveApprovedEmails([...existingEmails, ...emailsToAdd])
+  if (validEmails.length === 0) return result
+
+  try {
+    const res = await fetch("/api/emails/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails: validEmails }),
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      result.added = data.added || []
+      result.duplicates.push(...(data.duplicates || []))
+    } else {
+      console.error("Bulk upload failed:", data.error)
+    }
+  } catch (error) {
+    console.error("Error uploading emails:", error)
   }
 
   return result
 }
+
