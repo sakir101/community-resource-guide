@@ -161,11 +161,8 @@ export default function DynamicCategoryPage() {
 
     setIsSubmittingFeedback(true);
 
-    const userId = localStorage.getItem("currentUserId");
-
     const formatData = {
       resourceId: selectedResourceForFeedback.id,
-      userId: userId || "anonymous",
       comment: feedbackText,
     };
 
@@ -177,7 +174,6 @@ export default function DynamicCategoryPage() {
         },
         body: JSON.stringify({
           resourceId: formatData.resourceId,
-          userId: formatData.userId,
           comment: formatData.comment,
         }),
       });

@@ -298,8 +298,6 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/submit-feedback");
 
-      console.log(response);
-
       if (!response.ok) {
         console.error(
           "Failed to fetch feedback - Response not OK:",
@@ -682,22 +680,22 @@ export default function AdminPage() {
   };
 
   const handleEditInputChange = (name: string, value: string, id: string) => {
+    console.log(id);
     setEditFormData((prev: any) => {
-      const updatedFields = prev.field ? [...prev.field] : [];
-
-      const existingIndex = updatedFields.findIndex(
-        (f: any) => f.name === name
-      );
-
-      if (existingIndex !== -1) {
-        updatedFields[existingIndex] = { name, id, value };
-      } else {
-        updatedFields.push({ name, id, value });
-      }
+      const updatedFields = (prev.ResourceField || []).map((field: any) => {
+        if (field.fieldId === id) {
+          return {
+            ...field,
+            name, // If you want to update name as well
+            value,
+          };
+        }
+        return field;
+      });
 
       return {
         ...prev,
-        field: updatedFields,
+        ResourceField: updatedFields,
       };
     });
   };
@@ -804,14 +802,12 @@ export default function AdminPage() {
     const formatData = {
       categoryId: editingItem.category,
       resourceId: editFormData.id,
-      fields: editFormData.field?.map((f: any) => ({
+      fields: editFormData.ResourceField?.map((f: any) => ({
         name: f.name,
-        id: f.id || "", // Ensure each field has an id
+        id: f.fieldId || "",
         value: f.value || "",
       })),
     };
-
-    console.log(formatData, "Formatted Data for Edit");
 
     try {
       const response = await fetch("/api/resources", {
@@ -920,7 +916,6 @@ export default function AdminPage() {
   };
 
   const getItemDisplayName = (item: any, category: string) => {
-    console.log(item, "Item Data");
     // Check if it's a custom category
     const customCategory = customCategories.find((cat) => cat.id === category);
 
@@ -1537,7 +1532,6 @@ export default function AdminPage() {
     userId: string,
     newStatus: "active" | "inactive"
   ) => {
-    console.log(`Updating user ${userId} status to ${newStatus}`);
     try {
       const response = await fetch("/api/users", {
         method: "PUT",
@@ -2645,7 +2639,7 @@ export default function AdminPage() {
                       />
                     ) : field.type === "SELECT" ? (
                       <Select
-                        value={getEditFieldValue(field.name)}
+                        defaultValue={getEditFieldValue(field.name)}
                         onValueChange={(value) =>
                           handleEditInputChange(field.name, value, field.id)
                         }

@@ -106,12 +106,17 @@ export async function removeApprovedEmail(email: string): Promise<boolean> {
   }
 }
 
-
-export function isEmailApproved(email: string): boolean {
-  const emails = getApprovedEmails()
-  const normalizedEmail = email.toLowerCase().trim()
-  return emails.includes(normalizedEmail)
+export async function isEmailApproved(email: string): Promise<boolean> {
+  try {
+    const emails = await getApprovedEmails();
+    const normalizedEmail = email.toLowerCase().trim();
+    return emails.includes(normalizedEmail);
+  } catch (error) {
+    console.error("Failed to check approved emails:", error);
+    return false;
+  }
 }
+
 
 export async function addMultipleApprovedEmails(emailsText: string): Promise<{
   added: string[]

@@ -8,7 +8,6 @@ const prisma = new PrismaClient();
 export async function getFeedback() {
   return await prisma.resourceFeedback.findMany({
     include: {
-      user: true,
       resource: {
         include: {
           category: true,
@@ -39,11 +38,6 @@ export async function GET() {
         feedback: fb.comment,
         submittedAt: fb.createdAt,
         status: fb.status,
-        user: {
-          id: fb.userId,
-          name: "Anonymous",
-          email: fb.user.email,
-        },
       };
     });
 
@@ -68,7 +62,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { resourceId, userId, comment, action } = body;
+    const { resourceId, comment, action } = body;
 
     if (action === "update_status") {
       const { feedbackId, status } = body
@@ -94,7 +88,7 @@ export async function POST(request: NextRequest) {
     } else {
 
       // Validate required fields
-      if (!resourceId || !userId || !comment) {
+      if (!resourceId || !comment) {
         return NextResponse.json(
           {
             success: false,
@@ -108,7 +102,6 @@ export async function POST(request: NextRequest) {
       const feedback = await prisma.resourceFeedback.create({
         data: {
           resourceId,
-          userId,
           comment,
         },
       });

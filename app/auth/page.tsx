@@ -59,9 +59,9 @@ export default function AuthPage() {
 
     if (!isLogin) {
       // Check if email is in the approved list
-      // if (!isEmailApproved(email)) {
-      //   newErrors.push("This email is not authorized to create an account");
-      // }
+      if (!isEmailApproved(email)) {
+        newErrors.push("This email is not authorized to create an account");
+      }
 
       if (!confirmPassword) {
         newErrors.push("Please confirm your password");
