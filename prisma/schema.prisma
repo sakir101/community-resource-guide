@@ -9,14 +9,15 @@ datasource db {
 }
 
 model User {
-    id        String    @id @default(uuid())
-    password  String
-    email     String    @unique
-    isActive  Boolean   @default(false)
-    isAdmin   Boolean   @default(false)
-    lastLogin DateTime? @default(now())
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
+    id               String             @id @default(uuid())
+    password         String
+    email            String             @unique
+    isActive         Boolean            @default(false)
+    isAdmin          Boolean            @default(false)
+    lastLogin        DateTime?          @default(now())
+    createdAt        DateTime           @default(now())
+    updatedAt        DateTime           @updatedAt
+    ResourceFeedback ResourceFeedback[]
 
     @@map("users")
 }
@@ -48,7 +49,8 @@ model CategoryField {
     createdAt  DateTime  @default(now())
     updatedAt  DateTime  @updatedAt
 
-    category Category @relation(fields: [categoryId], references: [id])
+    category      Category        @relation(fields: [categoryId], references: [id])
+    ResourceField ResourceField[]
 
     @@map("category_fields")
 }
@@ -56,6 +58,7 @@ model CategoryField {
 model Resource {
     id               String             @id @default(uuid())
     categoryId       String
+    name             String?
     status           ResourceStatus     @default(pending)
     adminNote        String?
     createdAt        DateTime           @default(now())
@@ -70,12 +73,14 @@ model Resource {
 model ResourceFeedback {
     id         String         @id @default(uuid())
     resourceId String
+    userId     String?
     comment    String
     status     FeedbackStatus @default(PENDING)
     createdAt  DateTime       @default(now())
     updatedAt  DateTime       @updatedAt
 
     resource Resource @relation(fields: [resourceId], references: [id])
+    user     User?    @relation(fields: [userId], references: [id])
 
     @@map("resource_feedback")
 }
@@ -87,7 +92,8 @@ model ResourceField {
     name       String
     value      String
 
-    resource Resource @relation(fields: [resourceId], references: [id])
+    resource      Resource      @relation(fields: [resourceId], references: [id])
+    categoryField CategoryField @relation(fields: [fieldId], references: [id])
 
     @@map("resource_fields")
 }

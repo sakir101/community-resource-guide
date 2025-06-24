@@ -32,6 +32,7 @@ interface CategoryDefinition {
   icon: string;
   color: string;
   categoryFields: any[];
+  Resource: any[];
   isDefault?: boolean;
 }
 
@@ -57,7 +58,6 @@ export default function DynamicCategoryPage() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "resourceStorage") {
-        console.log("🔄 Storage changed, refreshing data...");
         // Refetch data when storage changes
         if (categoryName) {
           fetchCategoryData();
@@ -69,7 +69,6 @@ export default function DynamicCategoryPage() {
 
     // Also listen for custom events
     const handleCustomRefresh = () => {
-      console.log("🔄 Custom refresh event received");
       if (categoryName) {
         fetchCategoryData();
       }
@@ -88,29 +87,15 @@ export default function DynamicCategoryPage() {
     try {
       // Decode the category name in case it's URL encoded
       const decodedCategoryName = decodeURIComponent(categoryName);
-      console.log(
-        "🔍 Looking for category:",
-        decodedCategoryName,
-        "from URL:",
-        categoryName
-      );
 
       // First, get category information
       const categoriesResponse = await fetch(
         "/api/categories?includeDefault=true&_t=" + Date.now()
       ); // Add cache buster
+
       if (categoriesResponse.ok) {
         const categoriesResult = await categoriesResponse.json();
         if (categoriesResult.success) {
-          console.log(
-            "📋 Available categories:",
-            categoriesResult.data.map((c: any) => ({
-              id: c.id,
-              name: c.name,
-              label: c.label,
-            }))
-          );
-
           const category = categoriesResult.data.find(
             (cat: any) =>
               cat.name === categoryName ||
@@ -120,7 +105,6 @@ export default function DynamicCategoryPage() {
           );
 
           if (category) {
-            console.log("✅ Found category:", category);
             setCategoryInfo(category);
 
             // Then, get resources for this category using the category's name/id
@@ -130,19 +114,14 @@ export default function DynamicCategoryPage() {
             if (resourcesResponse.ok) {
               const resourcesResult = await resourcesResponse.json();
               if (resourcesResult.success) {
-                console.log("📊 Found resources:", resourcesResult.data.length);
                 setResourcesData(resourcesResult.data);
               }
             }
           } else {
-            console.error(
-              `❌ Category not found: ${categoryName} (decoded: ${decodedCategoryName})`
-            );
           }
         }
       }
     } catch (error) {
-      console.error("❌ Failed to fetch category data:", error);
     } finally {
       setLoading(false);
     }
@@ -158,6 +137,17 @@ export default function DynamicCategoryPage() {
 
   const handleFeedbackSubmit = async () => {
     if (!selectedResourceForFeedback || !feedbackText.trim()) return;
+
+    const userId = localStorage.getItem("currentUserId");
+
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to submit feedback.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmittingFeedback(true);
 
@@ -175,6 +165,7 @@ export default function DynamicCategoryPage() {
         body: JSON.stringify({
           resourceId: formatData.resourceId,
           comment: formatData.comment,
+          userId: userId,
         }),
       });
 
@@ -217,9 +208,7 @@ export default function DynamicCategoryPage() {
       return "Unknown Resource";
     }
 
-    // Use the first field as the display name
-    const firstField = categoryInfo.categoryFields[0];
-    return resource[firstField.name] || "Unknown Resource";
+    return resource.name;
   };
 
   const clearAllFilters = () => {
@@ -228,16 +217,24 @@ export default function DynamicCategoryPage() {
   };
 
   const filteredResources = resourcesData.filter((resource) => {
-    const matchesSearch = Object.values(resource).some((value) =>
-      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Text search (e.g., searchTerm applies to resource name, adminNote, etc.)
+    const matchesSearch =
+      resource.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.adminNote?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.ResourceField.some((f: any) =>
+        f.value.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
+    // Filters applied from select/text inputs
     const matchesFilters = Object.entries(filters).every(([key, value]) => {
       if (value === "all" || !value) return true;
-      return resource[key]
-        ?.toString()
-        .toLowerCase()
-        .includes(value.toLowerCase());
+
+      // Find the field in ResourceField[] by name
+      const matchedField = resource.ResourceField.find(
+        (field: any) => field.name === key
+      );
+
+      return matchedField?.value?.toLowerCase().includes(value.toLowerCase());
     });
 
     return matchesSearch && matchesFilters;
@@ -321,7 +318,7 @@ export default function DynamicCategoryPage() {
                       <label className="text-sm font-medium text-gray-700 mb-1 block">
                         {field.label}
                       </label>
-                      {field.type === "select" && field.options ? (
+                      {field.type === "SELECT" && field.options ? (
                         <Select
                           value={filters[field.name] || "all"}
                           onValueChange={(value) =>
@@ -381,13 +378,10 @@ export default function DynamicCategoryPage() {
               <CardContent className="space-y-4">
                 {/* Display all fields */}
                 <div className="space-y-2">
-                  {categoryInfo.categoryFields.slice(1).map((field) => {
-                    const value = resource[field.name];
-                    if (!value) return null;
-
+                  {resource.ResourceField.map((field: any) => {
                     return (
                       <div key={field.name} className="text-sm">
-                        <strong>{field.label}:</strong> {value}
+                        <strong>{field.name}:</strong> {field.value}
                       </div>
                     );
                   })}

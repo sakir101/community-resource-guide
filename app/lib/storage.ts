@@ -60,12 +60,11 @@ if (typeof window !== "undefined") {
     const storedCustomCategories = localStorage.getItem("customCategories")
     if (storedCustomCategories) {
       savedCustomCategories = JSON.parse(storedCustomCategories)
-      console.log("✅ Loaded custom categories from localStorage:", savedCustomCategories.length)
     } else {
       console.log("ℹ️ No custom categories found in localStorage")
     }
   } catch (error) {
-    console.error("❌ Error loading data from localStorage:", error)
+
   }
 }
 
@@ -113,28 +112,18 @@ const saveToLocalStorage = () => {
           newValue: dataToSave.storage,
         }),
       )
-
-      console.log("💾 Saved to localStorage:", {
-        storage: Object.keys(storage).length,
-        pendingResources: pendingResources.length,
-        customCategories: customCategories.length,
-        timestamp: new Date(dataToSave.timestamp).toLocaleTimeString(),
-      })
     } catch (error) {
-      console.error("❌ Error saving data to localStorage:", error)
+
     }
   }
 }
 
 export const getResourceData = (category: string) => {
   const data = storage[category as keyof typeof storage] || []
-  console.log(`Storage: Getting data for "${category}": ${data.length} items`)
-  console.log(`Available storage keys:`, Object.keys(storage))
   return data
 }
 
 export const addResource = (category: string, data: any) => {
-  console.log("➕ Adding resource to category:", category, data)
 
   if (!storage[category as keyof typeof storage]) {
     storage[category as keyof typeof storage] = []
@@ -143,19 +132,14 @@ export const addResource = (category: string, data: any) => {
   storage[category as keyof typeof storage].push(data)
   saveToLocalStorage()
 
-  console.log("✅ Resource added. Category now has:", storage[category as keyof typeof storage].length, "items")
   return true
 }
 
 export const updateResource = (category: string, index: number, data: any) => {
-  console.log("✏️ Updating resource in category:", category, "at index:", index)
-  console.log("📝 New data:", data)
-  console.log("📊 Current storage for category:", storage[category as keyof typeof storage]?.length, "items")
 
   if (storage[category as keyof typeof storage] && storage[category as keyof typeof storage][index]) {
     // Store the old data for comparison
     const oldData = storage[category as keyof typeof storage][index]
-    console.log("📝 Old data:", oldData)
 
     // Update the resource
     storage[category as keyof typeof storage][index] = data
@@ -165,8 +149,6 @@ export const updateResource = (category: string, index: number, data: any) => {
 
     // Verify the update was successful
     const updatedData = storage[category as keyof typeof storage][index]
-    console.log("✅ Updated data:", updatedData)
-    console.log("📊 Storage after update:", storage[category as keyof typeof storage]?.length, "items")
 
     // Double-check localStorage was updated
     if (typeof window !== "undefined") {
@@ -174,31 +156,26 @@ export const updateResource = (category: string, index: number, data: any) => {
         const storedData = localStorage.getItem("resourceStorage")
         if (storedData) {
           const parsed = JSON.parse(storedData)
-          console.log("💾 Verified localStorage update:", parsed[category]?.[index])
         }
       } catch (error) {
-        console.error("❌ Error verifying localStorage:", error)
+
       }
     }
 
     return true
   }
 
-  console.log("❌ Resource not found for update")
   return false
 }
 
 export const deleteResource = (category: string, index: number) => {
-  console.log("🗑️ Deleting resource from category:", category, "at index:", index)
 
   if (storage[category as keyof typeof storage] && storage[category as keyof typeof storage][index]) {
     storage[category as keyof typeof storage].splice(index, 1)
     saveToLocalStorage()
-    console.log("✅ Resource deleted successfully")
     return true
   }
 
-  console.log("❌ Resource not found for deletion")
   return false
 }
 
@@ -214,7 +191,6 @@ export const addPendingResource = (resource: Omit<PendingResource, "id">) => {
   }
   pendingResources.push(newResource)
   saveToLocalStorage()
-  console.log("📝 Added pending resource:", newResource.id, "Total pending:", pendingResources.length)
   return newResource
 }
 
@@ -271,7 +247,6 @@ export const removePendingResource = (id: string) => {
 
 // Custom category management functions
 export const getCustomCategories = () => {
-  console.log("📋 Getting custom categories:", customCategories.length)
   return customCategories
 }
 
@@ -301,7 +276,6 @@ export const addCustomCategory = (category: Omit<CategoryDefinition, "id" | "cre
     ],
   }
 
-  console.log("➕ Creating category with icon:", newCategory.icon, newCategory)
   customCategories.push(newCategory)
 
   // Initialize storage for this category
@@ -310,7 +284,6 @@ export const addCustomCategory = (category: Omit<CategoryDefinition, "id" | "cre
   }
 
   saveToLocalStorage()
-  console.log("✅ Category created and saved. Total custom categories:", customCategories.length)
   return newCategory
 }
 
@@ -319,10 +292,8 @@ export const updateCustomCategory = (id: string, updates: Partial<CategoryDefini
   if (index !== -1) {
     customCategories[index] = { ...customCategories[index], ...updates }
     saveToLocalStorage()
-    console.log("✏️ Updated category:", id)
     return customCategories[index]
   }
-  console.log("❌ Category not found for update:", id)
   return null
 }
 
@@ -333,10 +304,8 @@ export const deleteCustomCategory = (id: string) => {
     // Also remove the storage for this category
     delete storage[id as keyof typeof storage]
     saveToLocalStorage()
-    console.log("🗑️ Deleted category:", id)
     return true
   }
-  console.log("❌ Category not found for deletion:", id)
   return false
 }
 
@@ -462,15 +431,6 @@ export const getAllCategories = () => {
   ]
 
   const allCategories = [...defaultCategories, ...customCategories.map((cat) => ({ ...cat, isDefault: false }))]
-  console.log(
-    "📋 Getting all categories:",
-    allCategories.length,
-    "(",
-    defaultCategories.length,
-    "default +",
-    customCategories.length,
-    "custom )",
-  )
   return allCategories
 }
 
@@ -484,35 +444,23 @@ export const reloadFromLocalStorage = () => {
         Object.keys(parsed).forEach((key) => {
           storage[key as keyof typeof storage] = parsed[key]
         })
-        console.log("🔄 Reloaded data from localStorage")
       }
     } catch (error) {
-      console.error("❌ Error reloading from localStorage:", error)
+
     }
   }
 }
 
 // Debug function to check storage contents
 export const debugStorage = () => {
-  console.log("🔍 Storage contents:", {
-    camps: storage.camps.length,
-    schools: storage.schools.length,
-    "medical-supplies": storage["medical-supplies"].length,
-    "hamaspik-programs": storage["hamaspik-programs"].length,
-    "contracted-programs": storage["contracted-programs"].length,
-    perks: storage.perks.length,
-    customCategories: customCategories.length,
-  })
   return storage
 }
 
 // Debug function to check and restore perks data
 export const checkAndRestorePerks = () => {
-  console.log("Current perks in storage:", storage.perks)
 
   // If perks is empty, restore from original data
   if (!storage.perks || storage.perks.length === 0) {
-    console.log("Restoring perks data from original source")
     storage.perks = [...perksData]
     saveToLocalStorage()
   }
@@ -523,9 +471,5 @@ export const checkAndRestorePerks = () => {
 // Debug function to check localStorage
 export const debugLocalStorage = () => {
   if (typeof window !== "undefined") {
-    console.log("🔍 LocalStorage debug:")
-    console.log("customCategories:", localStorage.getItem("customCategories"))
-    console.log("resourceStorage:", localStorage.getItem("resourceStorage"))
-    console.log("pendingResources:", localStorage.getItem("pendingResources"))
   }
 }

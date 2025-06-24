@@ -274,10 +274,8 @@ export default function MainResourcePage() {
 
           setCategories(transformedCategories);
         } else {
-          console.error("Failed:", data.message);
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
       } finally {
         setLoading(false);
       }

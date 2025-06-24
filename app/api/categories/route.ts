@@ -9,6 +9,11 @@ export async function GET() {
     const categories = await prisma.category.findMany({
       include: {
         categoryFields: true,
+        Resource: {
+          include: {
+            ResourceField: true,
+          },
+        },
         _count: {
           select: {
             Resource: true,
@@ -22,7 +27,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: categories })
   } catch (error) {
-    console.error("❌ Failed to fetch categories:", error)
+
     return NextResponse.json(
       { success: false, message: "Failed to fetch categories" },
       { status: 500 }
@@ -50,7 +55,7 @@ export async function GETSingle(req: Request, { params }: { params: { id: string
 
     return NextResponse.json({ success: true, data: category })
   } catch (error) {
-    console.error("❌ Failed to fetch category:", error)
+
     return NextResponse.json(
       { success: false, message: "Failed to fetch category" },
       { status: 500 }
@@ -63,12 +68,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action } = body
 
-    console.log("📥 Categories API received:", { action, body })
 
     switch (action) {
       case "create": {
         const { name, label, description, icon, color, categoryFields } = body;
-        console.log(body);
 
         const categoryToSave = {
           name,
@@ -121,8 +124,6 @@ export async function POST(request: NextRequest) {
             return categoryWithFields;
           });
 
-          console.log("✅ Category created with fields:", result);
-
           return NextResponse.json({
             success: true,
             data: result,
@@ -130,7 +131,6 @@ export async function POST(request: NextRequest) {
           });
 
         } catch (error) {
-          console.error("❌ Error in transaction:", error);
           return NextResponse.json(
             {
               success: false,
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
             message: "Category updated successfully",
           });
         } catch (error) {
-          console.error("❌ Error updating category:", error);
+
           return NextResponse.json(
             {
               success: false,
@@ -238,8 +238,8 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          const deleted = await prisma.$transaction(async (tx) => {
-            // 1. Check if category exists
+          await prisma.$transaction(async (tx) => {
+            // Check if category exists
             const existingCategory = await tx.category.findUnique({
               where: { id: categoryId },
             });
@@ -248,32 +248,47 @@ export async function POST(request: NextRequest) {
               throw new Error("Category not found");
             }
 
-            // 2. Delete related category fields
+            // Find all resource IDs in this category
+            const resources = await tx.resource.findMany({
+              where: { categoryId },
+              select: { id: true },
+            });
+            const resourceIds = resources.map((r) => r.id);
+
+            // Delete related resource feedbacks
+            await tx.resourceFeedback.deleteMany({
+              where: { resourceId: { in: resourceIds } },
+            });
+
+            // Delete related resource fields
+            await tx.resourceField.deleteMany({
+              where: { resourceId: { in: resourceIds } },
+            });
+
+            // Delete resources
+            await tx.resource.deleteMany({
+              where: { id: { in: resourceIds } },
+            });
+
+            // Delete category fields
             await tx.categoryField.deleteMany({
               where: { categoryId },
             });
 
-            // 3. Delete the category itself
+            // Delete the category
             await tx.category.delete({
               where: { id: categoryId },
             });
-
-            return true;
           });
 
-          if (deleted) {
-            return NextResponse.json({
-              success: true,
-              message: "Category deleted successfully",
-            });
-          }
+          return NextResponse.json({
+            success: true,
+            message: "Category and all related data deleted successfully",
+          });
         } catch (error) {
-          console.error("❌ Error deleting category:", error);
+
           return NextResponse.json(
-            {
-              success: false,
-              message: error instanceof Error ? error.message : "Failed to delete category",
-            },
+            { success: false, message: "Failed to delete category" },
             { status: 500 }
           );
         }
@@ -289,7 +304,6 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error("❌ Error in categories API:", error)
     return NextResponse.json(
       {
         success: false,

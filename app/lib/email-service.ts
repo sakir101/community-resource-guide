@@ -9,24 +9,19 @@ export class EmailNotificationService {
   }): Promise<boolean> {
     try {
       const settings = getSettings()
+      console.log(settings, "settings in email service")
 
       if (!settings.adminEmail) {
-        console.log("⚠️ No admin email configured, skipping notification")
         return false
       }
 
       if (!settings.emailNotifications) {
-        console.log("⚠️ Email notifications disabled, skipping notification")
         return false
       }
 
       const resourceName =
-        resourceData.data.name ||
-        resourceData.data.campName ||
-        resourceData.data.title ||
-        resourceData.data.program ||
-        resourceData.data.resource ||
-        "Unknown Resource"
+        resourceData.data
+
 
       const subject = `New Resource Submission: ${resourceName}`
       const message = `
@@ -37,17 +32,90 @@ Category: ${resourceData.category}
 Submission ID: ${resourceData.id}
 Submitted: ${new Date(resourceData.submittedAt).toLocaleString()}
 
-Please review this submission in the admin panel.
-
-Resource Details:
-${Object.entries(resourceData.data)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join("\n")}
-      `
+Please review this submission in the admin panel.`
 
       return await this.sendEmail(settings.adminEmail, subject, message)
     } catch (error) {
-      console.error("Error sending new resource notification:", error)
+
+      return false
+    }
+  }
+
+  static async updateResourceNotification(resourceData: {
+    id: string
+    category: string
+    data: any
+    updatedAt: string
+  }): Promise<boolean> {
+    try {
+      const settings = getSettings()
+
+      if (!settings.adminEmail) {
+        return false
+      }
+
+      if (!settings.emailNotifications) {
+        return false
+      }
+
+      const resourceName =
+        resourceData.data
+
+
+      const subject = `Resource Update: ${resourceName}`
+      const message = `
+A resource has been updated.
+
+Resource: ${resourceName}
+Category: ${resourceData.category}
+Submission ID: ${resourceData.id}
+UpdatedAt: ${new Date(resourceData.updatedAt).toLocaleString()}
+
+Please review this update in the admin panel.`
+
+      return await this.sendEmail(settings.adminEmail, subject, message)
+    } catch (error) {
+
+      return false
+    }
+  }
+
+  static async deleteResourceNotification(resourceData: {
+    id: string
+    category: string
+    data: any
+  }): Promise<boolean> {
+    try {
+      const settings = getSettings()
+
+      if (!settings.adminEmail) {
+        return false
+      }
+
+      if (!settings.emailNotifications) {
+        return false
+      }
+
+      const resourceName =
+        resourceData.data
+
+
+
+
+      const subject = `Resource delete: ${resourceName}`
+      const message = `
+A resource has been deleted.
+
+Resource: ${resourceName}
+Category: ${resourceData.category}
+Submission ID: ${resourceData.id}
+
+
+Please review this submission in the admin panel.`
+
+      return await this.sendEmail(settings.adminEmail, subject, message)
+    } catch (error) {
+
       return false
     }
   }
@@ -63,12 +131,10 @@ ${Object.entries(resourceData.data)
       const settings = getSettings()
 
       if (!settings.adminEmail) {
-        console.log("⚠️ No admin email configured, skipping feedback notification")
         return false
       }
 
       if (!settings.emailNotifications) {
-        console.log("⚠️ Email notifications disabled, skipping feedback notification")
         return false
       }
 
@@ -86,10 +152,8 @@ ${feedbackData.feedback}
 
 Please review this feedback in the admin panel.
       `
-
       return await this.sendEmail(settings.adminEmail, subject, message)
     } catch (error) {
-      console.error("Error sending feedback notification:", error)
       return false
     }
   }
@@ -109,7 +173,7 @@ Test successful! ✅
 
       return await this.sendEmail(email, subject, message)
     } catch (error) {
-      console.error("Error sending test email:", error)
+
       return false
     }
   }
@@ -122,8 +186,6 @@ Test successful! ✅
       // You can get your own free key at https://web3forms.com
       const accessKey = "212445ad-8038-4130-bf22-3db034d7013a" // This is a demo key
 
-      console.log("📧 Sending email to:", email)
-      console.log("📧 Subject:", subject)
 
       const formData = new FormData()
       formData.append("access_key", accessKey)
@@ -142,17 +204,15 @@ Test successful! ✅
       }
 
       const data = await response.json()
-      console.log("📧 Web3Forms API response:", data)
 
       if (data.success) {
-        console.log("✅ Email sent successfully")
         return true
       } else {
-        console.error("❌ Web3Forms API returned error:", data.message)
+
         return false
       }
     } catch (error) {
-      console.error("❌ Failed to send email:", error)
+
       return false
     }
   }

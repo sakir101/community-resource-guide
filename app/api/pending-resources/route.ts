@@ -29,6 +29,7 @@ export async function getPendingResources() {
     categoryLabel: resource.category.label,
     submittedAt: resource.createdAt,
     status: resource.status,
+    name: resource.name,
     data: resource.ResourceField.map((field) => ({
       id: field.id,
       name: field.name,
@@ -39,16 +40,14 @@ export async function getPendingResources() {
 
 export async function GET() {
   try {
-    console.log("🔄 API: Fetching pending resources from database...");
     const pendingResources = await getPendingResources();
-    console.log("📋 Database response:", pendingResources.length, "pending resources");
 
     return NextResponse.json({
       success: true,
       data: pendingResources,
     });
   } catch (error) {
-    console.error("❌ Failed to fetch pending resources:", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -66,7 +65,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action } = body
 
-    console.log("📥 Pending resources API received:", { action, body })
 
     switch (action) {
       case "add": {
@@ -172,7 +170,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error("❌ Error in pending resources API:", error)
+
     return NextResponse.json(
       {
         success: false,

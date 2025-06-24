@@ -6,9 +6,9 @@ interface Settings {
 }
 
 const defaultSettings: Settings = {
-  adminEmail: "",
+  adminEmail: "sakirhossainfaruque104@gmail.com",
   emailNotifications: true,
-  web3FormsKey: "YOUR_WEB3FORMS_ACCESS_KEY", // You'll need to get this from web3forms.com
+  web3FormsKey: "212445ad-8038-4130-bf22-3db034d7013a", // You'll need to get this from web3forms.com
 }
 
 export const getSettings = (): Settings => {
@@ -20,10 +20,10 @@ export const getSettings = (): Settings => {
     const stored = localStorage.getItem("adminSettings")
     if (stored) {
       const parsed = JSON.parse(stored)
-      return { ...defaultSettings, ...parsed }
+      return { ...parsed }
     }
   } catch (error) {
-    console.error("Failed to load settings:", error)
+
   }
 
   return defaultSettings
@@ -35,12 +35,11 @@ export const saveSettings = (settings: Partial<Settings>) => {
   }
 
   try {
-    const current = getSettings()
-    const updated = { ...current, ...settings }
+    const updated = { ...settings }
+    console.log(updated, "updated")
     localStorage.setItem("adminSettings", JSON.stringify(updated))
-    console.log("✅ Settings saved:", updated)
   } catch (error) {
-    console.error("Failed to save settings:", error)
+
     throw error
   }
 }

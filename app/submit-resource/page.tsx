@@ -17,6 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Send, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 interface CategoryDefinition {
   id: string;
@@ -30,12 +31,14 @@ interface CategoryDefinition {
 }
 
 export default function SubmitResourcePage() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [formData, setFormData] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [allCategories, setAllCategories] = useState<CategoryDefinition[]>([]);
+  const [resourceName, setResourceName] = useState("");
   const { toast } = useToast();
 
   // useEffect(() => {
@@ -83,11 +86,8 @@ export default function SubmitResourcePage() {
 
           setAllCategories(transformedCategories);
         } else {
-          console.error("Failed:", data.message);
         }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
+      } catch (error) {}
     };
 
     getCategories();
@@ -138,10 +138,14 @@ export default function SubmitResourcePage() {
         return;
       }
 
-      console.log("Submitting form data:", {
-        category: selectedCategory,
-        data: formData,
-      });
+      if (!resourceName) {
+        toast({
+          title: "Missing Resource Name",
+          description: "Please enter a name for the resource.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Convert formData to array of { name, id, value }
       const payload = formFields.map((field) => ({
@@ -158,6 +162,7 @@ export default function SubmitResourcePage() {
         body: JSON.stringify({
           action: "add",
           category: selectedCategory,
+          resourceName,
           data: payload,
         }),
       });
@@ -170,9 +175,7 @@ export default function SubmitResourcePage() {
       let result;
       try {
         result = await response.json();
-        console.log("API response:", result);
       } catch (jsonError) {
-        console.error("Failed to parse JSON response:", jsonError);
         throw new Error("Invalid response from server. Please try again.");
       }
 
@@ -186,7 +189,6 @@ export default function SubmitResourcePage() {
         throw new Error(result.message || "Failed to submit resource");
       }
     } catch (error) {
-      console.error("Submission error:", error);
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -311,6 +313,19 @@ export default function SubmitResourcePage() {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="resourceName">
+                  Resource Name
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="resourceName"
+                  type="text"
+                  onChange={(e) => setResourceName(e.target.value)}
+                  required
+                />
+              </div>
+
               {selectedCategory && (
                 <>
                   {formFields.map((field) => (
@@ -322,7 +337,7 @@ export default function SubmitResourcePage() {
                         )}
                       </Label>
 
-                      {field.type === "textarea" ? (
+                      {field.type === "TEXTAREA" ? (
                         <Textarea
                           id={field.name}
                           value={formData[field.name] || ""}
@@ -339,7 +354,7 @@ export default function SubmitResourcePage() {
                               : ""
                           }
                         />
-                      ) : field.type === "select" ? (
+                      ) : field.type === "SELECT" ? (
                         <Select
                           value={formData[field.name] || ""}
                           onValueChange={(value) =>

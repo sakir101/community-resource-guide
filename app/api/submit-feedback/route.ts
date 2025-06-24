@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 export async function getFeedback() {
   return await prisma.resourceFeedback.findMany({
     include: {
+      user: true,
       resource: {
         include: {
           category: true,
@@ -24,6 +25,8 @@ export async function GET() {
   try {
     const feedbackRaw = await getFeedback();
 
+
+
     const feedback = feedbackRaw.map((fb) => {
       const resourceNameField = fb.resource.ResourceField.find(
         (field) => field.name === "name" || field.name === "title"
@@ -34,10 +37,11 @@ export async function GET() {
         resourceId: fb.resourceId,
         category: fb.resource.categoryId,
         categoryLabel: fb.resource.category.label,
-        resourceName: resourceNameField?.value || "Unnamed Resource",
+        resourceName: fb.resource.name,
         feedback: fb.comment,
         submittedAt: fb.createdAt,
         status: fb.status,
+        userEmail: fb.user ? fb.user.email : "Anonymous",
       };
     });
 
@@ -46,7 +50,7 @@ export async function GET() {
       data: feedback,
     });
   } catch (error) {
-    console.error("❌ Failed to fetch feedback:", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -62,7 +66,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { resourceId, comment, action } = body;
+    const { resourceId, comment, action, userId } = body;
 
     if (action === "update_status") {
       const { feedbackId, status } = body
@@ -88,7 +92,7 @@ export async function POST(request: NextRequest) {
     } else {
 
       // Validate required fields
-      if (!resourceId || !comment) {
+      if (!resourceId || !comment || !userId) {
         return NextResponse.json(
           {
             success: false,
@@ -103,41 +107,50 @@ export async function POST(request: NextRequest) {
         data: {
           resourceId,
           comment,
+          userId,
         },
       });
 
-      if (feedback) {
-        // // Send email notification (non-blocking)
-        // try {
-        //   const emailService = new EmailNotificationService()
-        //   await emailService.sendFeedbackNotification({
-        //     category,
-        //     resourceName,
-        //     feedback,
-        //     submittedAt,
-        //   })
-        // } catch (emailError) {
-        //   console.error("Failed to send email notification:", emailError)
-        //   // Don't fail the request if email fails
-        // }
-
-        return NextResponse.json({
-          success: true,
-          data: feedback,
-          message: "Feedback submitted successfully",
-        })
-      } else {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Failed to submit feedback",
+      // 2. Fetch the related resource and category for email info
+      const fullFeedback = await prisma.resourceFeedback.findUnique({
+        where: { id: feedback.id },
+        include: {
+          resource: {
+            include: {
+              category: true,
+            },
           },
-          { status: 500 },
-        )
+        },
+      })
+
+      if (!fullFeedback || !fullFeedback.resource || !fullFeedback.resource.category) {
+      } else {
+        const categoryLabel = fullFeedback.resource.category.label
+        const resourceName = fullFeedback.resource.name || "Unnamed Resource"
+
+        // 3. Send feedback email (non-blocking)
+        try {
+          await EmailNotificationService.sendFeedbackNotification({
+            id: feedback.id,
+            category: categoryLabel,
+            resourceName,
+            feedback: comment,
+            submittedAt: feedback.createdAt.toISOString(),
+          })
+        } catch (emailError) {
+
+          // Do not fail the main operation
+        }
       }
+
+      return NextResponse.json(
+        { success: true, message: "Feedback submitted successfully" },
+        { status: 201 }
+      )
+
     }
   } catch (error) {
-    console.error("Error in feedback API:", error)
+
     return NextResponse.json(
       {
         success: false,

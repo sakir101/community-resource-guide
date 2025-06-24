@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true, ...result }, { status: 200 })
     } catch (error) {
-        console.error("Bulk email upload error:", error)
+
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }

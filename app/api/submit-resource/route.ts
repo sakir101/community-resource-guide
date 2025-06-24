@@ -4,14 +4,12 @@ import { EmailNotificationService } from "@/app/lib/email-service"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("📝 Starting resource submission process...")
 
     let body
     try {
       body = await request.json()
-      console.log("📝 Received submission:", body)
     } catch (parseError) {
-      console.error("❌ JSON parsing error:", parseError)
+
       return NextResponse.json({ success: false, message: "Invalid JSON in request body" }, { status: 400 })
     }
 
@@ -19,12 +17,10 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!category) {
-      console.log("❌ Validation failed: Category is required")
       return NextResponse.json({ success: false, message: "Category is required" }, { status: 400 })
     }
 
     if (!data || Object.keys(data).length === 0) {
-      console.log("❌ Validation failed: Resource data is required")
       return NextResponse.json({ success: false, message: "Resource data is required" }, { status: 400 })
     }
 
@@ -37,10 +33,8 @@ export async function POST(request: NextRequest) {
         submittedAt: submittedAt || new Date().toISOString(),
         status: "pending",
       })
-      console.log("✅ Resource added to pending queue:", newResource.id)
-      console.log("✅ Resource details:", newResource)
     } catch (storageError) {
-      console.error("❌ Storage error:", storageError)
+
       return NextResponse.json(
         { success: false, message: "Failed to save resource. Please try again." },
         { status: 500 },
@@ -49,7 +43,6 @@ export async function POST(request: NextRequest) {
 
     // Try to send email notification
     try {
-      console.log("📧 Attempting to send email notification...")
 
       const emailSent = await EmailNotificationService.sendNewResourceNotification({
         id: newResource.id,
@@ -59,12 +52,12 @@ export async function POST(request: NextRequest) {
       })
 
       if (emailSent) {
-        console.log("✅ Email notification sent successfully")
+
       } else {
-        console.log("⚠️ Email notification failed, but submission was successful")
+
       }
     } catch (emailError) {
-      console.error("❌ Email notification error:", emailError)
+
       // Don't fail the submission if email fails - this is important!
     }
 
@@ -81,7 +74,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("❌ Unexpected error in submit-resource API:", error)
+
 
     // Ensure we always return valid JSON
     return NextResponse.json(

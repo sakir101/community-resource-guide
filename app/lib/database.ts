@@ -57,7 +57,7 @@ export async function getResourceData(category: string): Promise<any[]> {
     console.log(`📊 Database: Getting data for "${category}": ${Array.isArray(data) ? data.length : 0} items`)
     return Array.isArray(data) ? data : []
   } catch (error) {
-    console.error(`❌ Error getting resources for ${category}:`, error)
+
     return []
   }
 }
@@ -74,7 +74,7 @@ export async function addResource(category: string, data: any): Promise<boolean>
     console.log("✅ Database: Resource added. Category now has:", updatedData.length, "items")
     return true
   } catch (error) {
-    console.error("❌ Database: Error adding resource:", error)
+
     return false
   }
 }
@@ -96,7 +96,7 @@ export async function updateResource(category: string, index: number, data: any)
       return false
     }
   } catch (error) {
-    console.error("❌ Database: Error updating resource:", error)
+
     return false
   }
 }
@@ -118,7 +118,7 @@ export async function deleteResource(category: string, index: number): Promise<b
       return false
     }
   } catch (error) {
-    console.error("❌ Database: Error deleting resource:", error)
+
     return false
   }
 }
@@ -130,7 +130,7 @@ export async function getCustomCategories(): Promise<CategoryDefinition[]> {
     console.log("📋 Database: Getting custom categories:", Array.isArray(categories) ? categories.length : 0)
     return Array.isArray(categories) ? categories : []
   } catch (error) {
-    console.error("❌ Database: Error getting custom categories:", error)
+
     return []
   }
 }
@@ -175,7 +175,7 @@ export async function addCustomCategory(
     console.log("✅ Database: Category created and saved. Total custom categories:", updatedCategories.length)
     return newCategory
   } catch (error) {
-    console.error("❌ Database: Error creating category:", error)
+
     return null
   }
 }
@@ -199,7 +199,7 @@ export async function updateCustomCategory(
       return null
     }
   } catch (error) {
-    console.error("❌ Database: Error updating category:", error)
+
     return null
   }
 }
@@ -221,7 +221,7 @@ export async function deleteCustomCategory(id: string): Promise<boolean> {
       return false
     }
   } catch (error) {
-    console.error("❌ Database: Error deleting category:", error)
+
     return false
   }
 }
@@ -232,7 +232,7 @@ export async function getPendingResources(): Promise<PendingResource[]> {
     const resources = await kv.get(KEYS.PENDING_RESOURCES)
     return Array.isArray(resources) ? resources : []
   } catch (error) {
-    console.error("❌ Database: Error getting pending resources:", error)
+
     return []
   }
 }
@@ -250,7 +250,7 @@ export async function addPendingResource(resource: Omit<PendingResource, "id">):
     console.log("📝 Database: Added pending resource:", newResource.id, "Total pending:", updatedResources.length)
     return newResource
   } catch (error) {
-    console.error("❌ Database: Error adding pending resource:", error)
+
     return null
   }
 }
@@ -270,7 +270,7 @@ export async function updatePendingResource(
     }
     return null
   } catch (error) {
-    console.error("❌ Database: Error updating pending resource:", error)
+
     return null
   }
 }
@@ -294,7 +294,7 @@ export async function approvePendingResource(id: string, adminNotes?: string): P
     }
     return false
   } catch (error) {
-    console.error("❌ Database: Error approving pending resource:", error)
+
     return false
   }
 }
@@ -307,7 +307,6 @@ export async function rejectPendingResource(id: string, adminNotes?: string): Pr
     })
     return resource !== null
   } catch (error) {
-    console.error("❌ Database: Error rejecting pending resource:", error)
     return false
   }
 }
@@ -323,7 +322,7 @@ export async function removePendingResource(id: string): Promise<boolean> {
     }
     return false
   } catch (error) {
-    console.error("❌ Database: Error removing pending resource:", error)
+
     return false
   }
 }
@@ -334,7 +333,7 @@ export async function getFeedback(): Promise<Feedback[]> {
     const feedback = await kv.get(KEYS.FEEDBACK)
     return Array.isArray(feedback) ? feedback : []
   } catch (error) {
-    console.error("❌ Database: Error getting feedback:", error)
+
     return []
   }
 }
@@ -352,7 +351,7 @@ export async function addFeedback(feedback: Omit<Feedback, "id">): Promise<Feedb
     console.log("📝 Database: Added feedback:", newFeedback.id)
     return newFeedback
   } catch (error) {
-    console.error("❌ Database: Error adding feedback:", error)
+
     return null
   }
 }
@@ -369,7 +368,7 @@ export async function updateFeedbackStatus(id: string, status: Feedback["status"
     }
     return false
   } catch (error) {
-    console.error("❌ Database: Error updating feedback status:", error)
+
     return false
   }
 }
@@ -407,7 +406,7 @@ export async function initializeDefaultData(): Promise<void> {
 
     console.log("✅ Database: Default data initialization complete")
   } catch (error) {
-    console.error("❌ Database: Error initializing default data:", error)
+
   }
 }
 
@@ -432,6 +431,6 @@ export async function debugDatabase(): Promise<void> {
     const feedback = await getFeedback()
     console.log(`Feedback: ${feedback.length}`)
   } catch (error) {
-    console.error("❌ Database debug error:", error)
+
   }
 }

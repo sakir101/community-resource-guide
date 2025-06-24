@@ -9,8 +9,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { type, email, data } = body
 
-    console.log("📩 Notification request received:", { type, email, data })
-
     if (!email) {
       return NextResponse.json(
         { success: false, message: "Email is required" },
@@ -94,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success, message })
   } catch (error) {
-    console.error("❌ Notification API error:", error)
+
     return NextResponse.json({ success: false, message: "Failed to send notification" }, { status: 500 })
   }
 }

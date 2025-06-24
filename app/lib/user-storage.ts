@@ -45,7 +45,7 @@ export function getUsers(): User[] {
   try {
     return JSON.parse(usersJson)
   } catch (e) {
-    console.error("Failed to parse users from localStorage", e)
+
     return []
   }
 }
@@ -103,7 +103,7 @@ export async function createUser(
       user: { id: data.userId, email }, // return user ID & email for localStorage
     };
   } catch (error) {
-    console.error("Error calling /api/register:", error);
+
     return { success: false, message: "Something went wrong" };
   }
 }
@@ -140,7 +140,7 @@ export async function authenticateUser(
       user: { id: data.userId, email: data.email },
     };
   } catch (error) {
-    console.error("Error authenticating:", error);
+
     return { success: false, message: "Something went wrong" };
   }
 }

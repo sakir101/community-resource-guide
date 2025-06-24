@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getResourceData, addResource, updateResource, deleteResource, initializeDefaultData } from "@/app/lib/database"
 import { PrismaClient } from "@prisma/client";
+import { EmailNotificationService } from "@/app/lib/email-service";
 
 const prisma = new PrismaClient();
 
@@ -30,11 +31,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(`📊 API: Returning ${data.length} items for category ID "${categoryId}"`);
-
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("❌ Failed to fetch resources:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to fetch resources", data: [] },
       { status: 500 }
@@ -46,10 +45,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { action, category, data, index } = body
+    const { action, category, data, index, resourceName } = body
 
-    console.log(`🔧 API: Processing ${action} for category "${category}"`)
-    console.log(`📝 API: Data received:`, data)
+    console.log(data)
 
     if (action === "add") {
       try {
@@ -58,6 +56,7 @@ export async function POST(request: NextRequest) {
           const newResource = await tx.resource.create({
             data: {
               categoryId: category,
+              name: resourceName, // You must ensure this comes from the request
             },
           });
 
@@ -73,12 +72,34 @@ export async function POST(request: NextRequest) {
             data: resourceFields,
           });
 
-          return newResource;
+          return {
+            resource: newResource,
+            fields: resourceFields,
+          };
         });
+
+        const categoryData = await prisma.category.findUnique({
+          where: { id: category },
+          select: { label: true },
+        });
+
+        // 🔔 Send email notification after resource and fields are saved
+        try {
+
+          await EmailNotificationService.sendNewResourceNotification({
+            id: result.resource.id,
+            category: categoryData?.label || "Unknown Category",
+            data: result.resource.name,
+            submittedAt: new Date().toISOString(),
+          });
+        } catch (emailError) {
+
+          // Do not throw; this should not block the request
+        }
 
         return NextResponse.json({
           success: true,
-          data: result,
+          data: result.resource,
           message: "Resource added successfully",
         });
       } catch (error) {
@@ -94,15 +115,14 @@ export async function POST(request: NextRequest) {
     } else if (action === "update") {
       try {
         const result = await prisma.$transaction(async (tx) => {
-
-          // Step 2: Delete existing ResourceField entries
+          // 1. Delete existing ResourceField entries
           await tx.resourceField.deleteMany({
             where: {
               resourceId: data.resourceId,
             },
           });
 
-          // Step 3: Re-insert updated ResourceField entries
+          // 2. Re-insert updated ResourceField entries
           const resourceFields = data.fields.map((field: any) => ({
             resourceId: data.resourceId,
             fieldId: field.id,
@@ -113,15 +133,48 @@ export async function POST(request: NextRequest) {
           await tx.resourceField.createMany({
             data: resourceFields,
           });
+
+          // 3. Fetch category and updatedAt
+          const resource = await tx.resource.findUnique({
+            where: { id: data.resourceId },
+            include: {
+              category: true,
+            },
+          });
+
+          if (!resource) {
+            throw new Error("Resource not found");
+          }
+
+          return {
+            resource,
+            fields: resourceFields,
+          };
         });
+
+        // 📧 Send update notification
+        try {
+          const fieldMap = Object.fromEntries(
+            result.fields.map((f: any) => [f.name, f.value])
+          );
+
+          await EmailNotificationService.updateResourceNotification({
+            id: result.resource.id,
+            category: result.resource.category.label,
+            data: result.resource.name,
+            updatedAt: result.resource.updatedAt.toISOString(),
+          });
+        } catch (emailErr) {
+
+        }
 
         return NextResponse.json({
           success: true,
-          data: result,
+          data: result.resource,
           message: "Resource field updated successfully",
         });
       } catch (error) {
-        console.error("❌ Error updating resource:", error);
+
         return NextResponse.json(
           {
             success: false,
@@ -133,28 +186,55 @@ export async function POST(request: NextRequest) {
       }
     } else if (action === "delete") {
       try {
-        await prisma.$transaction([
-          // Delete related ResourceField entries
-          prisma.resourceField.deleteMany({
-            where: {
-              resourceId: category,
-            },
-          }),
+        // 1. Fetch the resource with its category and fields
+        const resource = await prisma.resource.findUnique({
+          where: { id: category },
+          include: {
+            category: true,
+            ResourceField: true,
+          },
+        });
 
-          // Delete the Resource
-          prisma.resource.delete({
-            where: {
-              id: category,
-            },
-          }),
+        if (!resource) {
+          return NextResponse.json(
+            { success: false, message: "Resource not found" },
+            { status: 404 }
+          );
+        }
+
+        // 2. Extract fields into key-value map
+        const fieldMap: Record<string, string> = Object.fromEntries(
+          resource.ResourceField.map((f) => [f.name, f.value])
+        );
+
+        // 3. Extract name/title to use in notification
+        const resourceName = resource.name;
+
+        // 4. Perform the deletion
+        await prisma.$transaction([
+          prisma.resourceField.deleteMany({ where: { resourceId: category } }),
+          prisma.resourceFeedback.deleteMany({ where: { resourceId: category } }),
+          prisma.resource.delete({ where: { id: category } }),
         ]);
+
+        // 5. Send delete notification
+        try {
+          await EmailNotificationService.deleteResourceNotification({
+            id: resource.id,
+            category: resource.category.label,
+            data: resourceName,
+          });
+        } catch (emailError) {
+
+        }
 
         return NextResponse.json({
           success: true,
           message: "Resource deleted successfully",
         });
+
       } catch (error) {
-        console.error("Delete transaction failed:", error);
+
         return NextResponse.json(
           {
             success: false,
@@ -168,7 +248,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 })
   } catch (error) {
-    console.error("API Error:", error)
+
     return NextResponse.json({ success: false, message: "Failed to process request" }, { status: 500 })
   }
 }

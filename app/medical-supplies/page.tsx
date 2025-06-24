@@ -1,70 +1,107 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Search, Phone, Mail, Stethoscope, MessageSquare, Filter } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ArrowLeft,
+  Search,
+  Phone,
+  Mail,
+  Stethoscope,
+  MessageSquare,
+  Filter,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface MedicalSupply {
-  resource: string
-  contact: string
-  email: string
-  notes: string
-  moreItems: string
+  resource: string;
+  contact: string;
+  email: string;
+  notes: string;
+  moreItems: string;
 }
 
 export default function MedicalSuppliesPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [medicalSuppliesData, setMedicalSuppliesData] = useState<MedicalSupply[]>([])
-  const [loading, setLoading] = useState(true)
-  const [feedbackDialog, setFeedbackDialog] = useState(false)
-  const [selectedSupplyForFeedback, setSelectedSupplyForFeedback] = useState<MedicalSupply | null>(null)
-  const [feedbackText, setFeedbackText] = useState("")
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
-  const { toast } = useToast()
+  const [searchTerm, setSearchTerm] = useState("");
+  const [medicalSuppliesData, setMedicalSuppliesData] = useState<
+    MedicalSupply[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [feedbackDialog, setFeedbackDialog] = useState(false);
+  const [selectedSupplyForFeedback, setSelectedSupplyForFeedback] =
+    useState<MedicalSupply | null>(null);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const { toast } = useToast();
 
-  const [selectedSupplyType, setSelectedSupplyType] = useState("all")
-  const [selectedArea, setSelectedArea] = useState("all")
-  const [selectedPayment, setSelectedPayment] = useState("all")
+  const [selectedSupplyType, setSelectedSupplyType] = useState("all");
+  const [selectedArea, setSelectedArea] = useState("all");
+  const [selectedPayment, setSelectedPayment] = useState("all");
 
   // Fetch medical supplies data from API
   useEffect(() => {
     const fetchMedicalSupplies = async () => {
       try {
-        const response = await fetch("/api/resources?category=medical-supplies")
-        const result = await response.json()
+        const response = await fetch(
+          "/api/resources?category=medical-supplies"
+        );
+        const result = await response.json();
         if (result.success) {
-          setMedicalSuppliesData(result.data)
+          setMedicalSuppliesData(result.data);
         }
       } catch (error) {
-        console.error("Failed to fetch medical supplies:", error)
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchMedicalSupplies()
-  }, [])
+    fetchMedicalSupplies();
+  }, []);
 
   // Add after the useEffect
   const getAvailableSupplyTypes = () => {
-    const types = new Set<string>()
+    const types = new Set<string>();
     medicalSuppliesData.forEach((supply) => {
-      const text = `${supply.notes} ${supply.resource}`.toLowerCase()
-      if (text.includes("diaper") || text.includes("incontinence")) types.add("incontinence")
-      if (text.includes("stroller") || text.includes("wheelchair") || text.includes("mobility")) types.add("mobility")
-      if (text.includes("oxygen") || text.includes("equipment") || text.includes("bed")) types.add("medical-equipment")
-      if (text.includes("feeding") || text.includes("tube")) types.add("feeding")
-      if (text.includes("oxygen") || text.includes("respiratory")) types.add("respiratory")
-      if (text.includes("transport") || text.includes("medical transport")) types.add("transportation")
-    })
+      const text = `${supply.notes} ${supply.resource}`.toLowerCase();
+      if (text.includes("diaper") || text.includes("incontinence"))
+        types.add("incontinence");
+      if (
+        text.includes("stroller") ||
+        text.includes("wheelchair") ||
+        text.includes("mobility")
+      )
+        types.add("mobility");
+      if (
+        text.includes("oxygen") ||
+        text.includes("equipment") ||
+        text.includes("bed")
+      )
+        types.add("medical-equipment");
+      if (text.includes("feeding") || text.includes("tube"))
+        types.add("feeding");
+      if (text.includes("oxygen") || text.includes("respiratory"))
+        types.add("respiratory");
+      if (text.includes("transport") || text.includes("medical transport"))
+        types.add("transportation");
+    });
     return [
       { value: "all", label: "All Supply Types" },
       ...Array.from(types).map((type) => ({
@@ -73,30 +110,34 @@ export default function MedicalSuppliesPage() {
           type === "incontinence"
             ? "Incontinence Supplies"
             : type === "mobility"
-              ? "Mobility Equipment"
-              : type === "medical-equipment"
-                ? "Medical Equipment"
-                : type === "feeding"
-                  ? "Feeding Supplies"
-                  : type === "respiratory"
-                    ? "Respiratory Equipment"
-                    : "Transportation",
+            ? "Mobility Equipment"
+            : type === "medical-equipment"
+            ? "Medical Equipment"
+            : type === "feeding"
+            ? "Feeding Supplies"
+            : type === "respiratory"
+            ? "Respiratory Equipment"
+            : "Transportation",
       })),
-    ]
-  }
+    ];
+  };
 
   const getAvailableAreas = () => {
-    const areas = new Set<string>()
+    const areas = new Set<string>();
     medicalSuppliesData.forEach((supply) => {
-      const text = supply.resource.toLowerCase()
-      if (text.includes("brooklyn") || text.includes("718")) areas.add("brooklyn")
-      if (text.includes("manhattan") || text.includes("212")) areas.add("manhattan")
-      if (text.includes("queens")) areas.add("queens")
-      if (text.includes("bronx")) areas.add("bronx")
-      if (text.includes("staten")) areas.add("staten-island")
-      if (text.includes("long island") || text.includes("516")) areas.add("long-island")
-      if (text.includes("nationwide") || text.includes("national")) areas.add("nationwide")
-    })
+      const text = supply.resource.toLowerCase();
+      if (text.includes("brooklyn") || text.includes("718"))
+        areas.add("brooklyn");
+      if (text.includes("manhattan") || text.includes("212"))
+        areas.add("manhattan");
+      if (text.includes("queens")) areas.add("queens");
+      if (text.includes("bronx")) areas.add("bronx");
+      if (text.includes("staten")) areas.add("staten-island");
+      if (text.includes("long island") || text.includes("516"))
+        areas.add("long-island");
+      if (text.includes("nationwide") || text.includes("national"))
+        areas.add("nationwide");
+    });
     return [
       { value: "all", label: "All Areas" },
       ...Array.from(areas).map((area) => ({
@@ -105,29 +146,33 @@ export default function MedicalSuppliesPage() {
           area === "brooklyn"
             ? "Brooklyn"
             : area === "manhattan"
-              ? "Manhattan"
-              : area === "queens"
-                ? "Queens"
-                : area === "bronx"
-                  ? "Bronx"
-                  : area === "staten-island"
-                    ? "Staten Island"
-                    : area === "long-island"
-                      ? "Long Island"
-                      : "Nationwide",
+            ? "Manhattan"
+            : area === "queens"
+            ? "Queens"
+            : area === "bronx"
+            ? "Bronx"
+            : area === "staten-island"
+            ? "Staten Island"
+            : area === "long-island"
+            ? "Long Island"
+            : "Nationwide",
       })),
-    ]
-  }
+    ];
+  };
 
   const getAvailablePaymentTypes = () => {
-    const payments = new Set<string>()
+    const payments = new Set<string>();
     medicalSuppliesData.forEach((supply) => {
-      const text = supply.notes.toLowerCase()
-      if (text.includes("medicaid") || text.includes("insurance")) payments.add("medicaid")
-      if (text.includes("insurance") || text.includes("covered")) payments.add("insurance")
-      if (text.includes("private") || text.includes("pay")) payments.add("private-pay")
-      if (text.includes("free") || text.includes("no cost")) payments.add("free")
-    })
+      const text = supply.notes.toLowerCase();
+      if (text.includes("medicaid") || text.includes("insurance"))
+        payments.add("medicaid");
+      if (text.includes("insurance") || text.includes("covered"))
+        payments.add("insurance");
+      if (text.includes("private") || text.includes("pay"))
+        payments.add("private-pay");
+      if (text.includes("free") || text.includes("no cost"))
+        payments.add("free");
+    });
     return [
       { value: "all", label: "All Payment Types" },
       ...Array.from(payments).map((payment) => ({
@@ -136,25 +181,32 @@ export default function MedicalSuppliesPage() {
           payment === "medicaid"
             ? "Medicaid Accepted"
             : payment === "insurance"
-              ? "Insurance Accepted"
-              : payment === "private-pay"
-                ? "Private Pay"
-                : "Free Services",
+            ? "Insurance Accepted"
+            : payment === "private-pay"
+            ? "Private Pay"
+            : "Free Services",
       })),
-    ]
-  }
+    ];
+  };
 
   // Replace static arrays
   const supplyTypeOptions =
-    medicalSuppliesData.length > 0 ? getAvailableSupplyTypes() : [{ value: "all", label: "All Supply Types" }]
-  const areaOptions = medicalSuppliesData.length > 0 ? getAvailableAreas() : [{ value: "all", label: "All Areas" }]
+    medicalSuppliesData.length > 0
+      ? getAvailableSupplyTypes()
+      : [{ value: "all", label: "All Supply Types" }];
+  const areaOptions =
+    medicalSuppliesData.length > 0
+      ? getAvailableAreas()
+      : [{ value: "all", label: "All Areas" }];
   const paymentOptions =
-    medicalSuppliesData.length > 0 ? getAvailablePaymentTypes() : [{ value: "all", label: "All Payment Types" }]
+    medicalSuppliesData.length > 0
+      ? getAvailablePaymentTypes()
+      : [{ value: "all", label: "All Payment Types" }];
 
   const handleFeedbackSubmit = async () => {
-    if (!selectedSupplyForFeedback || !feedbackText.trim()) return
+    if (!selectedSupplyForFeedback || !feedbackText.trim()) return;
 
-    setIsSubmittingFeedback(true)
+    setIsSubmittingFeedback(true);
 
     try {
       const response = await fetch("/api/submit-feedback", {
@@ -169,136 +221,176 @@ export default function MedicalSuppliesPage() {
           feedback: feedbackText,
           submittedAt: new Date().toISOString(),
         }),
-      })
+      });
 
       if (response.ok) {
         toast({
           title: "Feedback Submitted!",
-          description: "Thank you for your feedback. An admin will review it shortly.",
-        })
-        setFeedbackDialog(false)
-        setFeedbackText("")
-        setSelectedSupplyForFeedback(null)
+          description:
+            "Thank you for your feedback. An admin will review it shortly.",
+        });
+        setFeedbackDialog(false);
+        setFeedbackText("");
+        setSelectedSupplyForFeedback(null);
       } else {
-        throw new Error("Failed to submit feedback")
+        throw new Error("Failed to submit feedback");
       }
     } catch (error) {
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your feedback. Please try again.",
+        description:
+          "There was an error submitting your feedback. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmittingFeedback(false)
+      setIsSubmittingFeedback(false);
     }
-  }
+  };
 
   const openFeedbackDialog = (supply: MedicalSupply) => {
-    setSelectedSupplyForFeedback(supply)
-    setFeedbackDialog(true)
-    setFeedbackText("")
-  }
+    setSelectedSupplyForFeedback(supply);
+    setFeedbackDialog(true);
+    setFeedbackText("");
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div>Loading medical supplies...</div>
       </div>
-    )
+    );
   }
 
   const clearAllFilters = () => {
-    setSelectedSupplyType("all")
-    setSelectedArea("all")
-    setSelectedPayment("all")
-    setSearchTerm("")
-  }
+    setSelectedSupplyType("all");
+    setSelectedArea("all");
+    setSelectedPayment("all");
+    setSearchTerm("");
+  };
 
-  const matchesSupplyType = (notes: string, resource: string, selectedType: string): boolean => {
-    if (selectedType === "all") return true
+  const matchesSupplyType = (
+    notes: string,
+    resource: string,
+    selectedType: string
+  ): boolean => {
+    if (selectedType === "all") return true;
 
-    const text = `${notes} ${resource}`.toLowerCase()
+    const text = `${notes} ${resource}`.toLowerCase();
 
     switch (selectedType) {
       case "incontinence":
         return (
-          text.includes("diaper") || text.includes("incontinence") || text.includes("pull up") || text.includes("liner")
-        )
+          text.includes("diaper") ||
+          text.includes("incontinence") ||
+          text.includes("pull up") ||
+          text.includes("liner")
+        );
       case "mobility":
         return (
           text.includes("stroller") ||
           text.includes("wheelchair") ||
           text.includes("walker") ||
           text.includes("mobility")
-        )
+        );
       case "medical-equipment":
-        return text.includes("oxygen") || text.includes("equipment") || text.includes("bed") || text.includes("chair")
+        return (
+          text.includes("oxygen") ||
+          text.includes("equipment") ||
+          text.includes("bed") ||
+          text.includes("chair")
+        );
       case "feeding":
-        return text.includes("feeding") || text.includes("tube") || text.includes("enteral")
+        return (
+          text.includes("feeding") ||
+          text.includes("tube") ||
+          text.includes("enteral")
+        );
       case "respiratory":
-        return text.includes("oxygen") || text.includes("respiratory") || text.includes("breathing")
+        return (
+          text.includes("oxygen") ||
+          text.includes("respiratory") ||
+          text.includes("breathing")
+        );
       case "transportation":
-        return text.includes("transport") || text.includes("car") || text.includes("medical transport")
+        return (
+          text.includes("transport") ||
+          text.includes("car") ||
+          text.includes("medical transport")
+        );
       default:
-        return true
+        return true;
     }
-  }
+  };
 
-  const matchesAreaFilter = (resource: string, selectedArea: string): boolean => {
-    if (selectedArea === "all") return true
+  const matchesAreaFilter = (
+    resource: string,
+    selectedArea: string
+  ): boolean => {
+    if (selectedArea === "all") return true;
 
-    const text = resource.toLowerCase()
+    const text = resource.toLowerCase();
 
     switch (selectedArea) {
       case "brooklyn":
-        return text.includes("brooklyn") || text.includes("718")
+        return text.includes("brooklyn") || text.includes("718");
       case "manhattan":
-        return text.includes("manhattan") || text.includes("212")
+        return text.includes("manhattan") || text.includes("212");
       case "queens":
-        return text.includes("queens") || text.includes("718")
+        return text.includes("queens") || text.includes("718");
       case "bronx":
-        return text.includes("bronx")
+        return text.includes("bronx");
       case "staten-island":
-        return text.includes("staten")
+        return text.includes("staten");
       case "long-island":
-        return text.includes("long island") || text.includes("516")
+        return text.includes("long island") || text.includes("516");
       case "nationwide":
-        return text.includes("nationwide") || text.includes("national")
+        return text.includes("nationwide") || text.includes("national");
       default:
-        return true
+        return true;
     }
-  }
+  };
 
-  const matchesPaymentFilter = (notes: string, selectedPayment: string): boolean => {
-    if (selectedPayment === "all") return true
+  const matchesPaymentFilter = (
+    notes: string,
+    selectedPayment: string
+  ): boolean => {
+    if (selectedPayment === "all") return true;
 
-    const text = notes.toLowerCase()
+    const text = notes.toLowerCase();
 
     switch (selectedPayment) {
       case "medicaid":
-        return text.includes("medicaid") || text.includes("insurance")
+        return text.includes("medicaid") || text.includes("insurance");
       case "insurance":
-        return text.includes("insurance") || text.includes("covered")
+        return text.includes("insurance") || text.includes("covered");
       case "private-pay":
-        return text.includes("private") || text.includes("pay") || text.includes("cost")
+        return (
+          text.includes("private") ||
+          text.includes("pay") ||
+          text.includes("cost")
+        );
       case "free":
-        return text.includes("free") || text.includes("no cost")
+        return text.includes("free") || text.includes("no cost");
       default:
-        return true
+        return true;
     }
-  }
+  };
 
   const filteredSupplies = medicalSuppliesData.filter((supply) => {
     const matchesSearch = Object.values(supply).some((value) =>
-      value?.toString().toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-    const matchesType = matchesSupplyType(supply.notes, supply.resource, selectedSupplyType)
-    const matchesArea = matchesAreaFilter(supply.resource, selectedArea)
-    const matchesPayment = matchesPaymentFilter(supply.notes, selectedPayment)
+    const matchesType = matchesSupplyType(
+      supply.notes,
+      supply.resource,
+      selectedSupplyType
+    );
+    const matchesArea = matchesAreaFilter(supply.resource, selectedArea);
+    const matchesPayment = matchesPaymentFilter(supply.notes, selectedPayment);
 
-    return matchesSearch && matchesType && matchesArea && matchesPayment
-  })
+    return matchesSearch && matchesType && matchesArea && matchesPayment;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -311,8 +403,12 @@ export default function MedicalSuppliesPage() {
               Back to Home
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Medical Supplies & Resources</h1>
-          <p className="text-gray-600">Medical supplies and equipment resources</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Medical Supplies & Resources
+          </h1>
+          <p className="text-gray-600">
+            Medical supplies and equipment resources
+          </p>
         </div>
 
         {/* Search and Filters */}
@@ -332,15 +428,25 @@ export default function MedicalSuppliesPage() {
             <div className="flex items-center gap-2 mb-4">
               <Filter className="w-4 h-4 text-gray-500" />
               <h3 className="font-medium text-gray-900">Filters</h3>
-              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="ml-auto text-blue-600">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="ml-auto text-blue-600"
+              >
                 Clear All
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Supply Type</label>
-                <Select value={selectedSupplyType} onValueChange={setSelectedSupplyType}>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Supply Type
+                </label>
+                <Select
+                  value={selectedSupplyType}
+                  onValueChange={setSelectedSupplyType}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -355,7 +461,9 @@ export default function MedicalSuppliesPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Area</label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Area
+                </label>
                 <Select value={selectedArea} onValueChange={setSelectedArea}>
                   <SelectTrigger>
                     <SelectValue />
@@ -371,8 +479,13 @@ export default function MedicalSuppliesPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Payment</label>
-                <Select value={selectedPayment} onValueChange={setSelectedPayment}>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Payment
+                </label>
+                <Select
+                  value={selectedPayment}
+                  onValueChange={setSelectedPayment}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -392,7 +505,8 @@ export default function MedicalSuppliesPage() {
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-sm text-gray-600">
-            Showing {filteredSupplies.length} of {medicalSuppliesData.length} resources
+            Showing {filteredSupplies.length} of {medicalSuppliesData.length}{" "}
+            resources
           </p>
         </div>
 
@@ -457,22 +571,29 @@ export default function MedicalSuppliesPage() {
 
         {filteredSupplies.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No medical supplies found matching your search.</p>
+            <p className="text-gray-500">
+              No medical supplies found matching your search.
+            </p>
           </div>
         )}
         {/* Feedback Dialog */}
         <Dialog open={feedbackDialog} onOpenChange={setFeedbackDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Suggest Update for {selectedSupplyForFeedback?.resource}</DialogTitle>
+              <DialogTitle>
+                Suggest Update for {selectedSupplyForFeedback?.resource}
+              </DialogTitle>
               <p className="text-sm text-gray-600">
-                Help us keep our information accurate by suggesting updates or reporting issues
+                Help us keep our information accurate by suggesting updates or
+                reporting issues
               </p>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="feedback">Your feedback or suggested changes:</Label>
+                <Label htmlFor="feedback">
+                  Your feedback or suggested changes:
+                </Label>
                 <Textarea
                   id="feedback"
                   value={feedbackText}
@@ -490,7 +611,11 @@ export default function MedicalSuppliesPage() {
                 >
                   {isSubmittingFeedback ? "Submitting..." : "Submit Feedback"}
                 </Button>
-                <Button variant="outline" onClick={() => setFeedbackDialog(false)} disabled={isSubmittingFeedback}>
+                <Button
+                  variant="outline"
+                  onClick={() => setFeedbackDialog(false)}
+                  disabled={isSubmittingFeedback}
+                >
                   Cancel
                 </Button>
               </div>
@@ -499,5 +624,5 @@ export default function MedicalSuppliesPage() {
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

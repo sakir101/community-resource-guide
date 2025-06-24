@@ -15,7 +15,7 @@ export async function GET() {
         return NextResponse.json({ emails: emails.map(e => e.email) }, { status: 200 });
     }
     catch (error) {
-        console.error("Error fetching approved emails:", error);
+
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ ok: true, message: "Email added successfully", email: newEmail.email }, { status: 201 });
     } catch (error) {
-        console.error("Error adding email:", error);
+
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
@@ -73,7 +73,7 @@ export async function DELETE(request: NextRequest) {
 
         return NextResponse.json({ success: true, message: "Email removed" }, { status: 200 })
     } catch (error) {
-        console.error("Error removing email:", error)
+
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }

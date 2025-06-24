@@ -1,67 +1,87 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Search, Gift, MessageSquare, Filter } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Search, Gift, MessageSquare, Filter } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Perk {
-  title: string
-  description: string
-  details: string
+  title: string;
+  description: string;
+  details: string;
 }
 
 export default function PerksPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [perksData, setPerksData] = useState<Perk[]>([])
-  const [loading, setLoading] = useState(true)
-  const [feedbackDialog, setFeedbackDialog] = useState(false)
-  const [selectedPerkForFeedback, setSelectedPerkForFeedback] = useState<Perk | null>(null)
-  const [feedbackText, setFeedbackText] = useState("")
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
-  const { toast } = useToast()
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedAvailability, setSelectedAvailability] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [perksData, setPerksData] = useState<Perk[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [feedbackDialog, setFeedbackDialog] = useState(false);
+  const [selectedPerkForFeedback, setSelectedPerkForFeedback] =
+    useState<Perk | null>(null);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const { toast } = useToast();
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedAvailability, setSelectedAvailability] = useState("all");
 
   // Fetch perks data from API
   useEffect(() => {
     const fetchPerks = async () => {
       try {
-        const response = await fetch("/api/resources?category=perks")
-        const result = await response.json()
+        const response = await fetch("/api/resources?category=perks");
+        const result = await response.json();
         if (result.success) {
-          setPerksData(result.data)
+          setPerksData(result.data);
         }
       } catch (error) {
-        console.error("Failed to fetch perks:", error)
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchPerks()
-  }, [])
+    fetchPerks();
+  }, []);
 
   // Add after the useEffect
   const getAvailableCategories = () => {
-    const categories = new Set<string>()
+    const categories = new Set<string>();
     perksData.forEach((perk) => {
-      const text = `${perk.title} ${perk.description}`.toLowerCase()
-      if (text.includes("discount") || text.includes("savings")) categories.add("discounts")
-      if (text.includes("transport") || text.includes("travel")) categories.add("transportation")
-      if (text.includes("education") || text.includes("learning")) categories.add("education")
-      if (text.includes("recreation") || text.includes("activities") || text.includes("fun"))
-        categories.add("recreation")
-      if (text.includes("health") || text.includes("medical")) categories.add("health")
-      if (text.includes("service") || text.includes("support")) categories.add("services")
-    })
+      const text = `${perk.title} ${perk.description}`.toLowerCase();
+      if (text.includes("discount") || text.includes("savings"))
+        categories.add("discounts");
+      if (text.includes("transport") || text.includes("travel"))
+        categories.add("transportation");
+      if (text.includes("education") || text.includes("learning"))
+        categories.add("education");
+      if (
+        text.includes("recreation") ||
+        text.includes("activities") ||
+        text.includes("fun")
+      )
+        categories.add("recreation");
+      if (text.includes("health") || text.includes("medical"))
+        categories.add("health");
+      if (text.includes("service") || text.includes("support"))
+        categories.add("services");
+    });
     return [
       { value: "all", label: "All Categories" },
       ...Array.from(categories).map((category) => ({
@@ -70,29 +90,33 @@ export default function PerksPage() {
           category === "discounts"
             ? "Discounts & Savings"
             : category === "transportation"
-              ? "Transportation"
-              : category === "education"
-                ? "Educational Resources"
-                : category === "recreation"
-                  ? "Recreation & Activities"
-                  : category === "health"
-                    ? "Health & Wellness"
-                    : "Services",
+            ? "Transportation"
+            : category === "education"
+            ? "Educational Resources"
+            : category === "recreation"
+            ? "Recreation & Activities"
+            : category === "health"
+            ? "Health & Wellness"
+            : "Services",
       })),
-    ]
-  }
+    ];
+  };
 
   const getAvailableAvailability = () => {
-    const availability = new Set<string>()
+    const availability = new Set<string>();
     perksData.forEach((perk) => {
       if (perk.details) {
-        const text = perk.details.toLowerCase()
-        if (text.includes("immediate") || text.includes("anytime")) availability.add("immediate")
-        if (text.includes("appointment") || text.includes("contact")) availability.add("appointment")
-        if (text.includes("seasonal") || text.includes("summer")) availability.add("seasonal")
-        if (text.includes("limited") || text.includes("restrictions")) availability.add("limited")
+        const text = perk.details.toLowerCase();
+        if (text.includes("immediate") || text.includes("anytime"))
+          availability.add("immediate");
+        if (text.includes("appointment") || text.includes("contact"))
+          availability.add("appointment");
+        if (text.includes("seasonal") || text.includes("summer"))
+          availability.add("seasonal");
+        if (text.includes("limited") || text.includes("restrictions"))
+          availability.add("limited");
       }
-    })
+    });
     return [
       { value: "all", label: "All Availability" },
       ...Array.from(availability).map((avail) => ({
@@ -101,85 +125,143 @@ export default function PerksPage() {
           avail === "immediate"
             ? "Immediately Available"
             : avail === "appointment"
-              ? "By Appointment"
-              : avail === "seasonal"
-                ? "Seasonal"
-                : "Limited Availability",
+            ? "By Appointment"
+            : avail === "seasonal"
+            ? "Seasonal"
+            : "Limited Availability",
       })),
-    ]
-  }
+    ];
+  };
 
   // Replace static arrays
-  const categoryOptions = perksData.length > 0 ? getAvailableCategories() : [{ value: "all", label: "All Categories" }]
+  const categoryOptions =
+    perksData.length > 0
+      ? getAvailableCategories()
+      : [{ value: "all", label: "All Categories" }];
   const availabilityOptions =
-    perksData.length > 0 ? getAvailableAvailability() : [{ value: "all", label: "All Availability" }]
+    perksData.length > 0
+      ? getAvailableAvailability()
+      : [{ value: "all", label: "All Availability" }];
 
   const clearAllFilters = () => {
-    setSelectedCategory("all")
-    setSelectedAvailability("all")
-    setSearchTerm("")
-  }
+    setSelectedCategory("all");
+    setSelectedAvailability("all");
+    setSearchTerm("");
+  };
 
-  const matchesCategoryFilter = (title: string, description: string, selectedCategory: string): boolean => {
-    if (selectedCategory === "all") return true
+  const matchesCategoryFilter = (
+    title: string,
+    description: string,
+    selectedCategory: string
+  ): boolean => {
+    if (selectedCategory === "all") return true;
 
-    const text = `${title} ${description}`.toLowerCase()
+    const text = `${title} ${description}`.toLowerCase();
 
     switch (selectedCategory) {
       case "discounts":
-        return text.includes("discount") || text.includes("savings") || text.includes("special")
+        return (
+          text.includes("discount") ||
+          text.includes("savings") ||
+          text.includes("special")
+        );
       case "transportation":
-        return text.includes("transport") || text.includes("travel") || text.includes("ride")
+        return (
+          text.includes("transport") ||
+          text.includes("travel") ||
+          text.includes("ride")
+        );
       case "education":
-        return text.includes("education") || text.includes("learning") || text.includes("tutor")
+        return (
+          text.includes("education") ||
+          text.includes("learning") ||
+          text.includes("tutor")
+        );
       case "recreation":
         return (
-          text.includes("recreation") || text.includes("activities") || text.includes("fun") || text.includes("sports")
-        )
+          text.includes("recreation") ||
+          text.includes("activities") ||
+          text.includes("fun") ||
+          text.includes("sports")
+        );
       case "health":
-        return text.includes("health") || text.includes("medical") || text.includes("wellness")
+        return (
+          text.includes("health") ||
+          text.includes("medical") ||
+          text.includes("wellness")
+        );
       case "services":
-        return text.includes("service") || text.includes("support") || text.includes("assistance")
+        return (
+          text.includes("service") ||
+          text.includes("support") ||
+          text.includes("assistance")
+        );
       default:
-        return true
+        return true;
     }
-  }
+  };
 
-  const matchesAvailabilityFilter = (details: string, selectedAvailability: string): boolean => {
-    if (selectedAvailability === "all") return true
-    if (!details) return false
+  const matchesAvailabilityFilter = (
+    details: string,
+    selectedAvailability: string
+  ): boolean => {
+    if (selectedAvailability === "all") return true;
+    if (!details) return false;
 
-    const text = details.toLowerCase()
+    const text = details.toLowerCase();
 
     switch (selectedAvailability) {
       case "immediate":
-        return text.includes("immediate") || text.includes("anytime") || text.includes("available now")
+        return (
+          text.includes("immediate") ||
+          text.includes("anytime") ||
+          text.includes("available now")
+        );
       case "appointment":
-        return text.includes("appointment") || text.includes("contact") || text.includes("call")
+        return (
+          text.includes("appointment") ||
+          text.includes("contact") ||
+          text.includes("call")
+        );
       case "seasonal":
-        return text.includes("seasonal") || text.includes("summer") || text.includes("winter")
+        return (
+          text.includes("seasonal") ||
+          text.includes("summer") ||
+          text.includes("winter")
+        );
       case "limited":
-        return text.includes("limited") || text.includes("restrictions") || text.includes("eligibility")
+        return (
+          text.includes("limited") ||
+          text.includes("restrictions") ||
+          text.includes("eligibility")
+        );
       default:
-        return true
+        return true;
     }
-  }
+  };
 
   const filteredPerks = perksData.filter((perk) => {
     const matchesSearch = Object.values(perk).some((value) =>
-      value?.toString().toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-    const matchesCategory = matchesCategoryFilter(perk.title, perk.description, selectedCategory)
-    const matchesAvailability = matchesAvailabilityFilter(perk.details, selectedAvailability)
+    const matchesCategory = matchesCategoryFilter(
+      perk.title,
+      perk.description,
+      selectedCategory
+    );
+    const matchesAvailability = matchesAvailabilityFilter(
+      perk.details,
+      selectedAvailability
+    );
 
-    return matchesSearch && matchesCategory && matchesAvailability
-  })
+    return matchesSearch && matchesCategory && matchesAvailability;
+  });
 
   const handleFeedbackSubmit = async () => {
-    if (!selectedPerkForFeedback || !feedbackText.trim()) return
+    if (!selectedPerkForFeedback || !feedbackText.trim()) return;
 
-    setIsSubmittingFeedback(true)
+    setIsSubmittingFeedback(true);
 
     try {
       const response = await fetch("/api/submit-feedback", {
@@ -194,42 +276,44 @@ export default function PerksPage() {
           feedback: feedbackText,
           submittedAt: new Date().toISOString(),
         }),
-      })
+      });
 
       if (response.ok) {
         toast({
           title: "Feedback Submitted!",
-          description: "Thank you for your feedback. An admin will review it shortly.",
-        })
-        setFeedbackDialog(false)
-        setFeedbackText("")
-        setSelectedPerkForFeedback(null)
+          description:
+            "Thank you for your feedback. An admin will review it shortly.",
+        });
+        setFeedbackDialog(false);
+        setFeedbackText("");
+        setSelectedPerkForFeedback(null);
       } else {
-        throw new Error("Failed to submit feedback")
+        throw new Error("Failed to submit feedback");
       }
     } catch (error) {
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your feedback. Please try again.",
+        description:
+          "There was an error submitting your feedback. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmittingFeedback(false)
+      setIsSubmittingFeedback(false);
     }
-  }
+  };
 
   const openFeedbackDialog = (perk: Perk) => {
-    setSelectedPerkForFeedback(perk)
-    setFeedbackDialog(true)
-    setFeedbackText("")
-  }
+    setSelectedPerkForFeedback(perk);
+    setFeedbackDialog(true);
+    setFeedbackText("");
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div>Loading perks...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -244,7 +328,9 @@ export default function PerksPage() {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Perks</h1>
-          <p className="text-gray-600">Special perks and benefits available to community members</p>
+          <p className="text-gray-600">
+            Special perks and benefits available to community members
+          </p>
         </div>
 
         {/* Search and Filters */}
@@ -264,15 +350,25 @@ export default function PerksPage() {
             <div className="flex items-center gap-2 mb-4">
               <Filter className="w-4 h-4 text-gray-500" />
               <h3 className="font-medium text-gray-900">Filters</h3>
-              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="ml-auto text-blue-600">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="ml-auto text-blue-600"
+              >
                 Clear All
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Category</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Category
+                </label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -287,8 +383,13 @@ export default function PerksPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Availability</label>
-                <Select value={selectedAvailability} onValueChange={setSelectedAvailability}>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Availability
+                </label>
+                <Select
+                  value={selectedAvailability}
+                  onValueChange={setSelectedAvailability}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -348,7 +449,9 @@ export default function PerksPage() {
 
         {filteredPerks.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No perks found matching your search.</p>
+            <p className="text-gray-500">
+              No perks found matching your search.
+            </p>
           </div>
         )}
 
@@ -356,15 +459,20 @@ export default function PerksPage() {
         <Dialog open={feedbackDialog} onOpenChange={setFeedbackDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Suggest Update for {selectedPerkForFeedback?.title}</DialogTitle>
+              <DialogTitle>
+                Suggest Update for {selectedPerkForFeedback?.title}
+              </DialogTitle>
               <p className="text-sm text-gray-600">
-                Help us keep our information accurate by suggesting updates or reporting issues
+                Help us keep our information accurate by suggesting updates or
+                reporting issues
               </p>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="feedback">Your feedback or suggested changes:</Label>
+                <Label htmlFor="feedback">
+                  Your feedback or suggested changes:
+                </Label>
                 <Textarea
                   id="feedback"
                   value={feedbackText}
@@ -382,7 +490,11 @@ export default function PerksPage() {
                 >
                   {isSubmittingFeedback ? "Submitting..." : "Submit Feedback"}
                 </Button>
-                <Button variant="outline" onClick={() => setFeedbackDialog(false)} disabled={isSubmittingFeedback}>
+                <Button
+                  variant="outline"
+                  onClick={() => setFeedbackDialog(false)}
+                  disabled={isSubmittingFeedback}
+                >
                   Cancel
                 </Button>
               </div>
@@ -391,5 +503,5 @@ export default function PerksPage() {
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

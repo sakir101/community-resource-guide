@@ -23,7 +23,7 @@ export async function getApprovedEmails(): Promise<string[]> {
 
     return uniqueEmails;
   } catch (error) {
-    console.error("Error loading approved emails:", error);
+
     return [];
   }
 }
@@ -46,7 +46,7 @@ export function saveApprovedEmails(emails: string[]): void {
 
     // localStorage.setItem("approvedEmails", JSON.stringify(allEmails))
   } catch (error) {
-    console.error("Error saving approved emails:", error)
+
   }
 }
 
@@ -73,7 +73,7 @@ export async function addApprovedEmail(email: string): Promise<boolean> {
       return false;
     }
   } catch (error) {
-    console.error("Error adding approved email:", error);
+
     return false;
   }
 }
@@ -101,7 +101,7 @@ export async function removeApprovedEmail(email: string): Promise<boolean> {
 
     return false
   } catch (error) {
-    console.error("Failed to remove email:", error)
+
     return false
   }
 }
@@ -112,7 +112,7 @@ export async function isEmailApproved(email: string): Promise<boolean> {
     const normalizedEmail = email.toLowerCase().trim();
     return emails.includes(normalizedEmail);
   } catch (error) {
-    console.error("Failed to check approved emails:", error);
+
     return false;
   }
 }
@@ -166,10 +166,10 @@ export async function addMultipleApprovedEmails(emailsText: string): Promise<{
       result.added = data.added || []
       result.duplicates.push(...(data.duplicates || []))
     } else {
-      console.error("Bulk upload failed:", data.error)
+
     }
   } catch (error) {
-    console.error("Error uploading emails:", error)
+
   }
 
   return result

@@ -46,10 +46,12 @@ import {
   type User,
 } from "@/app/lib/user-storage";
 import { ApprovedEmailsManager } from "./approved-emails";
+import { set } from "react-hook-form";
 
 interface PendingResource {
   id: string;
   category: string;
+  name: string;
   data: any;
   submittedAt: string;
   status: "pending" | "approved" | "rejected";
@@ -63,6 +65,7 @@ interface Feedback {
   feedback: string;
   submittedAt: string;
   status: "PENDING" | "REVIEWED" | "RESOLVED";
+  userEmail: string;
 }
 
 interface NewField {
@@ -109,7 +112,7 @@ export default function AdminPage() {
   const [adminSettings, setAdminSettings] = useState({
     adminEmail: "",
     emailNotificationsEnabled: true,
-    web3FormsKey: "",
+    web3FormsKey: "212445ad-8038-4130-bf22-3db034d7013a",
   });
   const [isTestingEmail, setIsTestingEmail] = useState(false);
   const [categoryFields, setCategoryFields] = useState<any[]>([]);
@@ -136,6 +139,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryDefinition[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [resourceName, setResourceName] = useState("");
 
   const [loading, setLoading] = useState(true);
 
@@ -166,13 +170,12 @@ export default function AdminPage() {
             data.data.map((cat: any) => ({
               value: cat.id,
               label: cat.label,
+              count: cat._count?.Resource || 0,
             }))
           );
         } else {
-          console.error("Failed:", data.message);
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
       } finally {
         setLoading(false);
       }
@@ -265,7 +268,6 @@ export default function AdminPage() {
           }
         }
       } catch (error) {
-        console.error(`Error loading count for ${category.name}:`, error);
         counts[category.name] = 0;
       }
     }
@@ -279,6 +281,43 @@ export default function AdminPage() {
     }
   }, [customCategories]);
 
+  const getCategories = async () => {
+    try {
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+
+      if (data.success) {
+        const transformedCategories: CategoryDefinition[] = data.data.map(
+          (cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            label: cat.label,
+            description: cat.description,
+            icon: cat.icon,
+            color: cat.color,
+            createdAt: cat.createdAt,
+            isDefault: cat.isDefault,
+            fields: cat.categoryFields ?? [],
+          })
+        );
+
+        setAllCategories(transformedCategories);
+
+        setCategories(
+          data.data.map((cat: any) => ({
+            value: cat.id,
+            label: cat.label,
+            count: cat._count?.Resource || 0,
+          }))
+        );
+      } else {
+      }
+    } catch (error) {
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchPendingResources = async () => {
     try {
       const response = await fetch("/api/pending-resources");
@@ -287,11 +326,8 @@ export default function AdminPage() {
       if (result.success) {
         setPendingResources(result.data);
       } else {
-        console.error("❌ API returned error:", result.message);
       }
-    } catch (error) {
-      console.error("❌ Failed to fetch pending resources:", error);
-    }
+    } catch (error) {}
   };
 
   const fetchFeedback = async () => {
@@ -299,10 +335,6 @@ export default function AdminPage() {
       const response = await fetch("/api/submit-feedback");
 
       if (!response.ok) {
-        console.error(
-          "Failed to fetch feedback - Response not OK:",
-          response.status
-        );
         return;
       }
 
@@ -311,11 +343,9 @@ export default function AdminPage() {
       if (result.success) {
         setFeedbackList(result.data || []);
       } else {
-        console.error("Failed to fetch feedback:", result.message);
         setFeedbackList([]);
       }
     } catch (error) {
-      console.error("Failed to fetch feedback:", error);
       setFeedbackList([]);
     }
   };
@@ -341,9 +371,7 @@ export default function AdminPage() {
 
         setCustomCategories(transformedCategories);
       }
-    } catch (error) {
-      console.error("Failed to fetch custom categories:", error);
-    }
+    } catch (error) {}
   };
 
   const handleLogout = () => {
@@ -680,7 +708,6 @@ export default function AdminPage() {
   };
 
   const handleEditInputChange = (name: string, value: string, id: string) => {
-    console.log(id);
     setEditFormData((prev: any) => {
       const updatedFields = (prev.ResourceField || []).map((field: any) => {
         if (field.fieldId === id) {
@@ -738,6 +765,15 @@ export default function AdminPage() {
       return;
     }
 
+    if (!resourceName) {
+      toast({
+        title: "Missing Resource Name",
+        description: "Please enter a name for the resource.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Convert formData to array of { name, id, value }
     const payload = formFields.map((field) => ({
       name: field.name,
@@ -754,6 +790,7 @@ export default function AdminPage() {
         body: JSON.stringify({
           action: "add",
           category: selectedCategory,
+          resourceName,
           data: payload,
         }),
       });
@@ -769,6 +806,7 @@ export default function AdminPage() {
         // Clear form
         setFormData({});
         setSelectedCategory("");
+        setResourceName("");
 
         // Force refresh all data immediately
         await forceRefreshAllData();
@@ -781,7 +819,6 @@ export default function AdminPage() {
         throw new Error(result.message);
       }
     } catch (error) {
-      console.error("Error adding resource:", error);
       toast({
         title: "Error",
         description: "Failed to add resource. Please try again.",
@@ -798,7 +835,6 @@ export default function AdminPage() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const formatData = {
       categoryId: editingItem.category,
       resourceId: editFormData.id,
@@ -922,7 +958,7 @@ export default function AdminPage() {
     if (customCategory) {
       // Use the first field as the display name
       const firstField = customCategory.fields[0];
-      return item[firstField?.name] || "Unknown";
+      return item.name || "Unknown";
     }
 
     switch (category) {
@@ -954,9 +990,7 @@ export default function AdminPage() {
       if (result.success) {
         return result.data;
       }
-    } catch (error) {
-      console.error("Failed to fetch current data:", error);
-    }
+    } catch (error) {}
     return [];
   };
 
@@ -972,11 +1006,8 @@ export default function AdminPage() {
         setCurrentData((prev) => ({ ...prev, [category]: result.data }));
         return result.data;
       } else {
-        console.error(`❌ Failed to refresh ${category}:`, result.message);
       }
-    } catch (error) {
-      console.error(`❌ Error refreshing ${category}:`, error);
-    }
+    } catch (error) {}
     return [];
   };
 
@@ -998,9 +1029,7 @@ export default function AdminPage() {
         emailNotificationsEnabled: settings.emailNotifications ?? true,
         web3FormsKey: settings.web3FormsKey || "",
       });
-    } catch (error) {
-      console.error("Failed to load admin settings:", error);
-    }
+    } catch (error) {}
   };
 
   const handleSaveSettings = async () => {
@@ -1163,7 +1192,12 @@ export default function AdminPage() {
       icon: category.icon,
       color: category.color,
     });
-    setEditCategoryFields([...category.categoryFields]);
+
+    if (Array.isArray(category.fields)) {
+      setEditCategoryFields([...category.fields]); // Ensure we copy the fields array
+    } else {
+      setEditCategoryFields([]);
+    }
     setIsEditCategoryDialogOpen(true);
   };
 
@@ -1222,6 +1256,8 @@ export default function AdminPage() {
         });
         setCategoryFields([]);
 
+        await getCategories();
+
         // Refresh data
         await fetchCustomCategories?.();
         await loadCategoryCounts?.();
@@ -1229,7 +1265,6 @@ export default function AdminPage() {
         throw new Error(result.message || "Unknown error occurred");
       }
     } catch (error: any) {
-      console.error("❌ Error creating category:", error);
       toast({
         title: "Error",
         description: `Failed to create category: ${error.message}`,
@@ -1241,6 +1276,7 @@ export default function AdminPage() {
   const handleUpdateCategory = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingCategory) return;
+
     try {
       const response = await fetch("/api/categories", {
         method: "POST",
@@ -1265,6 +1301,18 @@ export default function AdminPage() {
           description: "Category has been updated successfully.",
         });
 
+        setAllCategories((prev) =>
+          prev.map((cat) =>
+            cat.id === editingCategory.id
+              ? {
+                  ...cat,
+                  ...editCategoryData,
+                  fields: editCategoryFields,
+                }
+              : cat
+          )
+        );
+
         setIsEditCategoryDialogOpen(false);
         setEditingCategory(null);
         await fetchCustomCategories();
@@ -1273,7 +1321,6 @@ export default function AdminPage() {
         throw new Error(result.message);
       }
     } catch (error) {
-      console.error("Error updating category:", error);
       toast({
         title: "Error",
         description: "Failed to update category. Please try again.",
@@ -1281,7 +1328,6 @@ export default function AdminPage() {
       });
     }
   };
-
   const handleDeleteCustomCategory = async (categoryId: string) => {
     if (
       confirm(
@@ -1307,7 +1353,7 @@ export default function AdminPage() {
             title: "Category Deleted",
             description: "Category has been deleted successfully.",
           });
-
+          await getCategories();
           await fetchCustomCategories();
           await loadCategoryCounts();
         } else {
@@ -1478,11 +1524,8 @@ export default function AdminPage() {
       if (res.ok && data.users) {
         setUsers(data.users);
       } else {
-        console.error("Failed to fetch users:", data.error || "Unknown error");
       }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
+    } catch (error) {}
   };
 
   const handleResourceAdminNote = async (
@@ -1739,7 +1782,18 @@ export default function AdminPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
+                  <div className="space-y-2">
+                    <Label htmlFor="resourceName">
+                      Resource Name
+                      <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input
+                      id="resourceName"
+                      type="text"
+                      onChange={(e) => setResourceName(e.target.value)}
+                      required
+                    />
+                  </div>
                   {selectedCategory && formFields.length > 0 && (
                     <>
                       {formFields.map((field) => (
@@ -1823,8 +1877,7 @@ export default function AdminPage() {
                   <SelectContent>
                     {categories.map((category) => (
                       <SelectItem key={category.value} value={category.value}>
-                        {category.label} ({categoryCounts[category.value] || 0}{" "}
-                        items)
+                        {category.label} {""} ({category.count})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -2284,7 +2337,7 @@ export default function AdminPage() {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <h3 className="font-medium text-gray-900">
-                                {getResourceDisplayName(resource)}
+                                {resource.name}
                               </h3>
                               <p className="text-sm text-gray-500 mb-2">
                                 Category:{" "}
@@ -2409,14 +2462,19 @@ export default function AdminPage() {
                                 {feedback.status}
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-500 mb-2">
-                              Category:{" "}
-                              {
-                                categories.find(
-                                  (c) => c.value === feedback.category
-                                )?.label
-                              }
-                            </p>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-2">
+                                User: {feedback.userEmail || "Anonymous User"}
+                              </p>
+                              <p className="text-sm text-gray-500 mb-2">
+                                Category:{" "}
+                                {
+                                  categories.find(
+                                    (c) => c.value === feedback.category
+                                  )?.label
+                                }
+                              </p>
+                            </div>
                             <div className="bg-blue-50 p-3 rounded text-sm mb-3">
                               <strong>Feedback:</strong>
                               <p className="mt-1">{feedback.feedback}</p>

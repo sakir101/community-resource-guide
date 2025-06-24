@@ -47,7 +47,6 @@ export function ApprovedEmailsManager() {
 
   const handleAddEmail = async () => {
     if (!newEmail) return;
-    console.log(newEmail);
 
     if (!/\S+@\S+\.\S+/.test(newEmail)) {
       toast({
