@@ -47,6 +47,7 @@ import {
 } from "@/app/lib/user-storage";
 import { ApprovedEmailsManager } from "./approved-emails";
 import { set } from "react-hook-form";
+import { get } from "http";
 
 interface PendingResource {
   id: string;
@@ -112,7 +113,7 @@ export default function AdminPage() {
   const [adminSettings, setAdminSettings] = useState({
     adminEmail: "",
     emailNotificationsEnabled: true,
-    web3FormsKey: "212445ad-8038-4130-bf22-3db034d7013a",
+    web3FormsKey: "f543a6ac-166d-4f10-9d05-2cfc23c25a16",
   });
   const [isTestingEmail, setIsTestingEmail] = useState(false);
   const [categoryFields, setCategoryFields] = useState<any[]>([]);
@@ -140,6 +141,9 @@ export default function AdminPage() {
   const [allCategories, setAllCategories] = useState<CategoryDefinition[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [resourceName, setResourceName] = useState("");
+  const [editResourceNameId, setEditResourceNameId] = useState<string | null>(
+    null
+  );
 
   const [loading, setLoading] = useState(true);
 
@@ -870,10 +874,12 @@ export default function AdminPage() {
         setIsEditDialogOpen(false);
         setEditingItem(null);
         setEditFormData({});
+        await getCategories();
 
         // Force immediate data refresh with multiple attempts
 
         // Refresh the data for the current category immediately
+
         await refreshData(editingItem.category);
 
         // Update category counts
@@ -1650,6 +1656,54 @@ export default function AdminPage() {
     }
   };
 
+  const handleEditResourceName = async (item: any) => {
+    if (!resourceName) {
+      return;
+    }
+
+    const formatData = {
+      resourceId: item.id,
+      resourceName,
+    };
+
+    try {
+      const response = await fetch("/api/resources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "updateResourceName",
+          data: formatData,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "Resource Updated Successfully!",
+          description: result.message,
+        });
+
+        console.log(result, "result in handleEditResourceName");
+
+        await getCategories();
+
+        // Force refresh all data
+        await forceRefreshAllData();
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update resource. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!isAuthenticated) {
     return <div>Loading...</div>;
   }
@@ -1657,6 +1711,7 @@ export default function AdminPage() {
   const formFields = selectedCategory ? getFormFields(selectedCategory) : [];
 
   const editFormFields = editingItem ? getFormFields(editingItem.category) : [];
+
   const pendingCount = pendingResources.filter(
     (r) => r.status === "pending"
   ).length;
@@ -1684,21 +1739,6 @@ export default function AdminPage() {
             <p className="text-gray-600">Manage community resources</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={forceRefreshAllData}>
-              🔄 Refresh Data
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Try to reload categories
-                fetchCustomCategories();
-              }}
-            >
-              Debug Categories
-            </Button>
-            <Button variant="outline" onClick={recoverData}>
-              Recover Data
-            </Button>
             <Button variant="outline" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -1904,10 +1944,51 @@ export default function AdminPage() {
                             className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                           >
                             <div className="flex-1">
-                              <h3 className="font-medium text-gray-900">
-                                {getItemDisplayName(item, selectedCategory)}
-                              </h3>
-                              <p className="text-sm text-gray-500">
+                              {editResourceNameId === item.id ? (
+                                <div className="flex items-center space-x-3 mr-3">
+                                  <Input
+                                    value={resourceName}
+                                    onChange={(e) =>
+                                      setResourceName(e.target.value)
+                                    }
+                                    className="flex-1 w-1/2"
+                                    placeholder="Resource Name"
+                                    required
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      handleEditResourceName(item);
+                                      setEditResourceNameId(null);
+                                    }}
+                                  >
+                                    Save
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-3">
+                                  <h3 className="font-medium text-gray-900">
+                                    {getItemDisplayName(item, selectedCategory)}
+                                  </h3>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditResourceNameId(item.id);
+                                      setResourceName(
+                                        getItemDisplayName(
+                                          item,
+                                          selectedCategory
+                                        )
+                                      );
+                                    }}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )}
+                              {/* <p className="text-sm text-gray-500">
                                 {selectedCategory === "camps" &&
                                   `Contact: ${item.contactPerson}`}
                                 {selectedCategory === "schools" &&
@@ -1920,7 +2001,7 @@ export default function AdminPage() {
                                   `Type: ${item.programType}`}
                                 {selectedCategory === "perks" &&
                                   item.description}
-                              </p>
+                              </p> */}
                             </div>
                             <div className="flex space-x-2">
                               <Button

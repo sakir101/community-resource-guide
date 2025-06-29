@@ -21,6 +21,7 @@ export async function getApprovedEmails(): Promise<string[]> {
     const combined = [...apiEmails];
     const uniqueEmails = [...new Set(combined.map((email) => email.toLowerCase().trim()))];
 
+
     return uniqueEmails;
   } catch (error) {
 
@@ -110,6 +111,7 @@ export async function isEmailApproved(email: string): Promise<boolean> {
   try {
     const emails = await getApprovedEmails();
     const normalizedEmail = email.toLowerCase().trim();
+
     return emails.includes(normalizedEmail);
   } catch (error) {
 

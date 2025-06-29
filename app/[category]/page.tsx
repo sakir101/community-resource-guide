@@ -248,6 +248,8 @@ export default function DynamicCategoryPage() {
     );
   }
 
+  console.log(filteredResources, "Filtered Resources");
+
   if (!categoryInfo) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -361,55 +363,61 @@ export default function DynamicCategoryPage() {
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-sm text-gray-600">
-            Showing {filteredResources.length} of {resourcesData.length}{" "}
-            resources
+            Showing{" "}
+            {
+              filteredResources.filter((r: any) => r.status === "approve")
+                .length
+            }{" "}
+            of {resourcesData.filter((r: any) => r.status === "approve").length}{" "}
+            approved resources
           </p>
         </div>
 
         {/* Resources Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredResources.map((resource, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-xl text-blue-600">
-                  {getResourceDisplayName(resource)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Display all fields */}
-                <div className="space-y-2">
-                  {resource.ResourceField.map((field: any) => {
-                    return (
+          {filteredResources
+            .filter((resource) => resource.status === "approve") // only approved resources
+            .map((resource, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-xl text-blue-600">
+                    {getResourceDisplayName(resource)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Display all fields */}
+                  <div className="space-y-2">
+                    {resource.ResourceField.map((field: any) => (
                       <div key={field.name} className="text-sm">
                         <strong>{field.name}:</strong> {field.value}
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
 
-                {/* Feedback Button */}
-                <div className="pt-2 border-t">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openFeedbackDialog(resource)}
-                    className="w-full text-xs text-gray-500 hover:text-blue-600 h-8"
-                  >
-                    <MessageSquare className="w-3 h-3 mr-1" />
-                    Suggest Update or Comment
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {/* Feedback Button */}
+                  <div className="pt-2 border-t">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openFeedbackDialog(resource)}
+                      className="w-full text-xs text-gray-500 hover:text-blue-600 h-8"
+                    >
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      Suggest Update or Comment
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
 
-        {filteredResources.length === 0 && (
+        {filteredResources.filter((r) => r.status === "approve").length ===
+          0 && (
           <div className="text-center py-12">
             <p className="text-gray-500">
               {resourcesData.length === 0
                 ? `No resources found in ${categoryInfo.label}.`
-                : "No resources found matching your search."}
+                : "No approved resources found matching your search."}
             </p>
             {resourcesData.length === 0 && (
               <p className="text-gray-400 text-sm mt-2">

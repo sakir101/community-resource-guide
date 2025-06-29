@@ -119,6 +119,45 @@ Please review this submission in the admin panel.`
       return false
     }
   }
+  static async resourceNameUpdateNotification(resourceData: {
+    id: string
+    category: string
+    data: any
+  }): Promise<boolean> {
+    try {
+      const settings = getSettings()
+
+      if (!settings.adminEmail) {
+        return false
+      }
+
+      if (!settings.emailNotifications) {
+        return false
+      }
+
+      const resourceName =
+        resourceData.data
+
+
+
+
+      const subject = `Resource name updated: ${resourceName}`
+      const message = `
+A resource name has been updated.
+
+Resource: ${resourceName}
+Category: ${resourceData.category}
+Submission ID: ${resourceData.id}
+
+
+Please review this submission in the admin panel.`
+
+      return await this.sendEmail(settings.adminEmail, subject, message)
+    } catch (error) {
+
+      return false
+    }
+  }
 
   static async sendFeedbackNotification(feedbackData: {
     id: string
@@ -184,7 +223,7 @@ Test successful! ✅
 
       // For now, we'll use a free Web3Forms key for testing
       // You can get your own free key at https://web3forms.com
-      const accessKey = "212445ad-8038-4130-bf22-3db034d7013a" // This is a demo key
+      const accessKey = "f543a6ac-166d-4f10-9d05-2cfc23c25a16" // This is a demo key
 
 
       const formData = new FormData()

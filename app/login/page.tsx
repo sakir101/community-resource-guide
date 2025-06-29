@@ -31,7 +31,7 @@ export default function Login() {
 
     try {
       // Check credentials - using the updated credentials
-      if (username === "sakir" && password === "1234") {
+      if (username === "hram95ltw" && password === "2pkXy8X5Z;'R") {
         // Set admin session
         localStorage.setItem("isAdmin", "true");
         localStorage.setItem("adminLoginTime", Date.now().toString());

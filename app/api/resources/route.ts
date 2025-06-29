@@ -244,6 +244,52 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+    } else if (action === "updateResourceName") {
+      try {
+        // 1. Fetch the resource with its category and fields
+        const resource = await prisma.resource.update({
+          where: { id: data.resourceId },
+          data: { name: data.resourceName },
+          include: {
+            category: true,
+            ResourceField: true,
+          },
+        });
+
+        if (!resource) {
+          return NextResponse.json(
+            { success: false, message: "Resource update failed" },
+            { status: 404 }
+          );
+        }
+
+        // 5. Send delete notification
+        try {
+          await EmailNotificationService.resourceNameUpdateNotification({
+            id: resource.id,
+            category: resource.category.label,
+            data: resource.name,
+          });
+        } catch (emailError) {
+
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Resource name updated successfully",
+        });
+
+      } catch (error) {
+
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Failed to update resource",
+            error: error instanceof Error ? error.message : String(error),
+          },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 })

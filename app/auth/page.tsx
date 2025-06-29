@@ -44,7 +44,7 @@ export default function AuthPage() {
     }
   }, []);
 
-  const validateForm = () => {
+  const validateForm = async () => {
     const newErrors: string[] = [];
 
     if (!email) {
@@ -58,10 +58,11 @@ export default function AuthPage() {
     }
 
     if (!isLogin) {
-      // Check if email is in the approved list
-      // if (!isEmailApproved(email)) {
-      //   newErrors.push("This email is not authorized to create an account");
-      // }
+      const approved = await isEmailApproved(email);
+      if (!approved) {
+        console.log(email, "email");
+        newErrors.push("This email is not authorized to create an account");
+      }
 
       if (!confirmPassword) {
         newErrors.push("Please confirm your password");
@@ -110,17 +111,14 @@ export default function AuthPage() {
       } else {
         // Handle signup
         const result = await createUser(email, password);
-
         if (result.success && result.user) {
           localStorage.setItem("isUserAuthenticated", "true");
           localStorage.setItem("userLoginTime", Date.now().toString());
           localStorage.setItem("currentUserId", result.user.id);
-
           toast({
             title: "Account Created!",
             description: "Welcome to the Resource Guide.",
           });
-
           window.location.href = "/";
         } else {
           setErrors([result.message]);

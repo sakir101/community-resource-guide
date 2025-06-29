@@ -8,7 +8,7 @@ interface Settings {
 const defaultSettings: Settings = {
   adminEmail: "sakirhossainfaruque104@gmail.com",
   emailNotifications: true,
-  web3FormsKey: "212445ad-8038-4130-bf22-3db034d7013a", // You'll need to get this from web3forms.com
+  web3FormsKey: "f543a6ac-166d-4f10-9d05-2cfc23c25a16", // You'll need to get this from web3forms.com
 }
 
 export const getSettings = (): Settings => {
