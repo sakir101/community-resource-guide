@@ -60,7 +60,6 @@ export default function AuthPage() {
     if (!isLogin) {
       const approved = await isEmailApproved(email);
       if (!approved) {
-        console.log(email, "email");
         newErrors.push("This email is not authorized to create an account");
       }
 
@@ -84,7 +83,9 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (!validateForm()) {
+    const formValidated = await validateForm();
+
+    if (!formValidated) {
       setIsLoading(false);
       return;
     }

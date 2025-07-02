@@ -113,7 +113,7 @@ export default function AdminPage() {
   const [adminSettings, setAdminSettings] = useState({
     adminEmail: "",
     emailNotificationsEnabled: true,
-    web3FormsKey: "f543a6ac-166d-4f10-9d05-2cfc23c25a16",
+    web3FormsKey: "",
   });
   const [isTestingEmail, setIsTestingEmail] = useState(false);
   const [categoryFields, setCategoryFields] = useState<any[]>([]);
@@ -751,6 +751,17 @@ export default function AdminPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const stored = localStorage.getItem("adminSettings");
+    const parsedSettings = stored ? JSON.parse(stored) : null;
+
+    if (!parsedSettings?.adminEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please set an admin email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validate required fields
     const requiredFields = formFields.filter((field) => field.required);
@@ -796,6 +807,7 @@ export default function AdminPage() {
           category: selectedCategory,
           resourceName,
           data: payload,
+          settings: parsedSettings,
         }),
       });
 
@@ -839,6 +851,18 @@ export default function AdminPage() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const stored = localStorage.getItem("adminSettings");
+    const parsedSettings = stored ? JSON.parse(stored) : null;
+
+    if (!parsedSettings?.adminEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please set an admin email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formatData = {
       categoryId: editingItem.category,
       resourceId: editFormData.id,
@@ -860,6 +884,7 @@ export default function AdminPage() {
           category: editingItem.category,
           index: editingItem.index,
           data: formatData,
+          settings: parsedSettings,
         }),
       });
 
@@ -914,6 +939,17 @@ export default function AdminPage() {
     if (
       confirm(`Are you sure you want to delete"? This action cannot be undone.`)
     ) {
+      const stored = localStorage.getItem("adminSettings");
+      const parsedSettings = stored ? JSON.parse(stored) : null;
+
+      if (!parsedSettings?.adminEmail) {
+        toast({
+          title: "Email Required",
+          description: "Please set an admin email address first.",
+          variant: "destructive",
+        });
+        return;
+      }
       try {
         const response = await fetch("/api/resources", {
           method: "POST",
@@ -924,6 +960,7 @@ export default function AdminPage() {
             action: "delete",
             category: item.id,
             index,
+            settings: parsedSettings,
           }),
         });
 
@@ -1061,7 +1098,10 @@ export default function AdminPage() {
   };
 
   const handleTestEmail = async () => {
-    if (!adminSettings.adminEmail) {
+    const stored = localStorage.getItem("adminSettings");
+    const parsedSettings = stored ? JSON.parse(stored) : null;
+
+    if (!parsedSettings?.adminEmail) {
       toast({
         title: "Email Required",
         description: "Please set an admin email address first.",
@@ -1080,8 +1120,7 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           type: "test",
-          email: adminSettings.adminEmail,
-          data: {},
+          settings: parsedSettings, // ✅ pass localStorage settings
         }),
       });
 
@@ -1090,7 +1129,7 @@ export default function AdminPage() {
       if (result.success) {
         toast({
           title: "Test Email Sent!",
-          description: `Check your inbox at ${adminSettings.adminEmail}`,
+          description: `Check your inbox at ${parsedSettings.adminEmail}`,
         });
       } else {
         toast({
@@ -1661,6 +1700,18 @@ export default function AdminPage() {
       return;
     }
 
+    const stored = localStorage.getItem("adminSettings");
+    const parsedSettings = stored ? JSON.parse(stored) : null;
+
+    if (!parsedSettings?.adminEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please set an admin email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formatData = {
       resourceId: item.id,
       resourceName,
@@ -1675,6 +1726,7 @@ export default function AdminPage() {
         body: JSON.stringify({
           action: "updateResourceName",
           data: formatData,
+          settings: parsedSettings,
         }),
       });
 
@@ -1685,8 +1737,6 @@ export default function AdminPage() {
           title: "Resource Updated Successfully!",
           description: result.message,
         });
-
-        console.log(result, "result in handleEditResourceName");
 
         await getCategories();
 
@@ -1815,8 +1865,7 @@ export default function AdminPage() {
                             key={category.value}
                             value={category.value}
                           >
-                            {category.label} (
-                            {categoryCounts[category.value] || 0} items)
+                            {category.label} {""} ({category.count})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2703,6 +2752,20 @@ export default function AdminPage() {
                         }))
                       }
                       placeholder="admin@example.com"
+                    />
+                    <br />
+                    <Label htmlFor="adminEmail">Admin Form Key</Label>
+                    <Input
+                      id="web3FormsKey"
+                      type="text"
+                      value={adminSettings.web3FormsKey}
+                      onChange={(e) =>
+                        setAdminSettings((prev) => ({
+                          ...prev,
+                          web3FormsKey: e.target.value,
+                        }))
+                      }
+                      placeholder="f543a6ac-166d-4f10-9d05-2cfc23c25a16"
                     />
                     <p className="text-sm text-gray-500">
                       This email will receive notifications for:

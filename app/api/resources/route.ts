@@ -45,9 +45,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { action, category, data, index, resourceName } = body
+    const { action, category, data, index, resourceName, settings } = body
 
-    console.log(data)
 
     if (action === "add") {
       try {
@@ -91,6 +90,8 @@ export async function POST(request: NextRequest) {
             category: categoryData?.label || "Unknown Category",
             data: result.resource.name,
             submittedAt: new Date().toISOString(),
+            email: settings.adminEmail,
+            settings
           });
         } catch (emailError) {
 
@@ -163,6 +164,8 @@ export async function POST(request: NextRequest) {
             category: result.resource.category.label,
             data: result.resource.name,
             updatedAt: result.resource.updatedAt.toISOString(),
+            email: settings.adminEmail,
+            settings,
           });
         } catch (emailErr) {
 
@@ -223,6 +226,8 @@ export async function POST(request: NextRequest) {
             id: resource.id,
             category: resource.category.label,
             data: resourceName,
+            email: settings.adminEmail,
+            settings,
           });
         } catch (emailError) {
 
@@ -246,6 +251,8 @@ export async function POST(request: NextRequest) {
       }
     } else if (action === "updateResourceName") {
       try {
+
+        const { data, settings } = body
         // 1. Fetch the resource with its category and fields
         const resource = await prisma.resource.update({
           where: { id: data.resourceId },
@@ -269,6 +276,8 @@ export async function POST(request: NextRequest) {
             id: resource.id,
             category: resource.category.label,
             data: resource.name,
+            email: settings.adminEmail,
+            settings,
           });
         } catch (emailError) {
 

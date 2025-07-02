@@ -6,15 +6,23 @@ const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { type, email, data } = body
+    const body = await request.json();
+    const { type, settings } = body;
+    console.log(settings, "settings in send notification route")
 
-    if (!email) {
+    if (!settings || !settings.adminEmail) {
       return NextResponse.json(
-        { success: false, message: "Email is required" },
-        { status: 400 },
-      )
+        { success: false, message: "Missing settings or email" },
+        { status: 400 }
+      );
     }
+
+    // if (!email) {
+    //   return NextResponse.json(
+    //     { success: false, message: "Email is required" },
+    //     { status: 400 },
+    //   )
+    // }
 
     let success = false
     let message = ""
@@ -78,8 +86,12 @@ export async function POST(request: NextRequest) {
       }
 
       case "test": {
-        success = await EmailNotificationService.sendTestEmail(email)
-        message = "Test email sent"
+        const success = await EmailNotificationService.sendTestEmail(
+          settings.adminEmail,
+          settings
+        );
+
+        return NextResponse.json({ success });
         break
       }
 

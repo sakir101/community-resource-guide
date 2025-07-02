@@ -5,28 +5,33 @@ interface Settings {
   web3FormsKey: string
 }
 
-const defaultSettings: Settings = {
-  adminEmail: "sakirhossainfaruque104@gmail.com",
-  emailNotifications: true,
-  web3FormsKey: "f543a6ac-166d-4f10-9d05-2cfc23c25a16", // You'll need to get this from web3forms.com
-}
+// const defaultSettings: Settings = {
+//   adminEmail: "sakirhossainfaruque104@gmail.com",
+//   emailNotifications: true,
+//   web3FormsKey: "f543a6ac-166d-4f10-9d05-2cfc23c25a16", // You'll need to get this from web3forms.com
+// }
 
-export const getSettings = (): Settings => {
+export const getSettings = () => {
+  console.log("1")
+  // if (typeof window === "undefined") {
+  //   return defaultSettings
+  // }
   if (typeof window === "undefined") {
-    return defaultSettings
+    const stored = localStorage.getItem("adminSettings")
+    console.log(stored, "stored settings")
   }
 
   try {
+    console.log("2")
     const stored = localStorage.getItem("adminSettings")
+    console.log(stored, "stored settings")
     if (stored) {
       const parsed = JSON.parse(stored)
       return { ...parsed }
     }
   } catch (error) {
-
+    return {}
   }
-
-  return defaultSettings
 }
 
 export const saveSettings = (settings: Partial<Settings>) => {

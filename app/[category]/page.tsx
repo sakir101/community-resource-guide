@@ -138,6 +138,9 @@ export default function DynamicCategoryPage() {
   const handleFeedbackSubmit = async () => {
     if (!selectedResourceForFeedback || !feedbackText.trim()) return;
 
+    const stored = localStorage.getItem("adminSettings");
+    const parsedSettings = stored ? JSON.parse(stored) : null;
+
     const userId = localStorage.getItem("currentUserId");
 
     if (!userId) {
@@ -166,6 +169,7 @@ export default function DynamicCategoryPage() {
           resourceId: formatData.resourceId,
           comment: formatData.comment,
           userId: userId,
+          settings: parsedSettings,
         }),
       });
 
@@ -247,8 +251,6 @@ export default function DynamicCategoryPage() {
       </div>
     );
   }
-
-  console.log(filteredResources, "Filtered Resources");
 
   if (!categoryInfo) {
     return (

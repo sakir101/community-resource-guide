@@ -66,7 +66,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { resourceId, comment, action, userId } = body;
+    const { resourceId, comment, action, userId, settings } = body;
 
     if (action === "update_status") {
       const { feedbackId, status } = body
@@ -136,6 +136,8 @@ export async function POST(request: NextRequest) {
             resourceName,
             feedback: comment,
             submittedAt: feedback.createdAt.toISOString(),
+            email: settings.adminEmail,
+            settings
           })
         } catch (emailError) {
 
